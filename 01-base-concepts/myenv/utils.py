@@ -13,7 +13,8 @@ def max_dict(d):
 def random_action(a, acts,eps=0.1,):
   # epsilon-soft to ensure all states are visited
   p = np.random.random()
-  if p < (1 - eps):
-    return a
-  else:
+  if p> eps:
     return np.random.choice(acts)
+  else:
+    return a
+    

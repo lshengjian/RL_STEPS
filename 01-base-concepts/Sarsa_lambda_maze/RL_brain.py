@@ -46,10 +46,11 @@ class SarsaLambdaTable(RL):
 
     def check_state_exist(self, state):
         if state not in self.q_table:
-            row= np.array( \
-                    [0]*len(self.actions), \
-                    dtype=float 
-                )
+            row= np.zeros(len(self.actions),dtype=float)
+            # row= np.array( \
+            #         [0]*len(self.actions), \
+            #         dtype=float 
+            #     )
             self.q_table[state]=row
             # also update eligibility trace
             self.eligibility_trace[state]=row.copy()
@@ -68,10 +69,7 @@ class SarsaLambdaTable(RL):
         # Method 1:
         self.eligibility_trace[s][a] += 1
 
-        # Method 2:
-        # self.eligibility_trace.loc[s] *= 0
-        # self.eligibility_trace.loc[s][a] = 1
-
+ 
         # Q update
         for k in self.eligibility_trace.keys():
             self.q_table[k] += self.lr * error * self.eligibility_trace[k]

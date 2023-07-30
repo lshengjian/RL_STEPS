@@ -13,7 +13,7 @@ from RL_brain import SarsaLambdaTable
 RL=None
 def update():
     global RL
-    for episode in range(100):
+    for episode in range(60):
         # initial observation
         observation = env.reset()
 
@@ -22,7 +22,7 @@ def update():
 
         # initial all zero eligibility trace
         for data in RL.eligibility_trace.values():
-            data *= 0
+            data[:]= 0.0
 
         while True:
             # fresh env

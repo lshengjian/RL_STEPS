@@ -6,7 +6,6 @@ Black rectangles:       hells       [reward = -1].
 Yellow bin circle:      paradise    [reward = +1].
 All other states:       ground      [reward = 0].
 
-
 """
 
 
@@ -21,9 +20,9 @@ MAZE_H = 4  # grid height
 MAZE_W = 4  # grid width
 
 
-class Maze(tk.Tk, object):
+class Maze(tk.Tk):#, object
     def __init__(self):
-        super(Maze, self).__init__()
+        super().__init__()
         self.action_space = ['u', 'd', 'l', 'r']
         self.n_actions = len(self.action_space)
         self.title('maze')
@@ -44,7 +43,7 @@ class Maze(tk.Tk, object):
             self.canvas.create_line(x0, y0, x1, y1)
 
         # create origin
-        origin = np.array([20, 20])
+        origin = np.array([UNIT//2, UNIT//2])
 
         # hell
         hell1_center = origin + np.array([UNIT * 2, UNIT])
@@ -79,7 +78,7 @@ class Maze(tk.Tk, object):
         self.update()
         time.sleep(0.5)
         self.canvas.delete(self.rect)
-        origin = np.array([20, 20])
+        origin = np.array([UNIT//2, UNIT//2])
         self.rect = self.canvas.create_rectangle(
             origin[0] - 15, origin[1] - 15,
             origin[0] + 15, origin[1] + 15,
