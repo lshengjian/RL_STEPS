@@ -1,6 +1,4 @@
-import gymnasium as gym
-
-from myenv.myenv  import MyLakeEnv
+from mylake.myenv  import MyLakeEnv
 def main():
    env = MyLakeEnv(render_mode="human",map_name="4x4")
    observation, info = env.reset(seed=42)
