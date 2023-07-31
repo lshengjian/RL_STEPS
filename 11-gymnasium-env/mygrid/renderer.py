@@ -3,6 +3,9 @@ from os import path
 from gymnasium.error import DependencyNotInstalled
 from .config import *
 from .world import World
+VISITE_COLOR=(255, 255, 255)
+AGENT_COLOR=(249, 12, 3)
+TEXT_COLOR=(249, 12, 255)
 class Renderer:
     def __init__(self,world:World,FPS:int=4):
         self.world=world
@@ -15,8 +18,7 @@ class Renderer:
         self.window_size = (TILE_SIZE[0] * ncol, TILE_SIZE[1] * nrow)
         self.cell_size = TILE_SIZE
 
-
-    def render(self, mode:str,visits:np.ndarray):
+    def render(self, mode:str,visits:np.ndarray,V:np.ndarray=None):
         try:
             import pygame
             from pygame import gfxdraw
@@ -27,10 +29,10 @@ class Renderer:
 
         if self._surface is None:
             pygame.init()
-
             if mode == "human":
                 pygame.display.init()
                 pygame.display.set_caption("My Mini Grid")
+                self.font  =  pygame.font.Font(None,20)
                 self._surface = pygame.display.set_mode(self.window_size)
             elif mode == "rgb_array":
                 self._surface = pygame.Surface(self.window_size)
@@ -42,7 +44,7 @@ class Renderer:
         if self.clock is None:
             self.clock = pygame.time.Clock()
 
-        self._surface.fill((0, 0, 0))
+        #self._surface.fill((0, 0, 0))
         desc = self.world.desc.tolist()
         assert isinstance(desc, list), f"desc should be a list or an array, got {desc}"
         nrow=self.world.nrow
@@ -50,30 +52,35 @@ class Renderer:
         
         for y in range(nrow):
             for x in range(ncol):
-                pos = (x * self.cell_size[0], y * self.cell_size[1])
+                pos = [x * self.cell_size[0], y * self.cell_size[1]]
                 rect = (*pos, *self.cell_size)
                 flag=desc[y][x]
                 flag = flag.decode()
                 color=COLORS[flag]
                 gfxdraw.box(self._surface,rect,color)
                 s=self.world.idx2state(y,x)
+                total=sum(visits[s])
                 if visits[s,STAY]:
                     gfxdraw.aacircle(
                         self._surface,
                         int(pos[0]+TILE_SIZE[0]/2),
                         int(pos[1]+TILE_SIZE[1]/2),
-                        int(TILE_SIZE[1] / 6),
-                        (255, 255, 255),
+                        int(TILE_SIZE[1] / 6*visits[s,STAY]/total),
+                        VISITE_COLOR
                     )
                 for k,d in ACT_DIRS.items():
-                    max_num=max(visits[s])
                     if visits[s,k]:
-                        scale=visits[s,k]/max_num
+                        scale=visits[s,k]/total
                         x0,y0=pos[0]+TILE_SIZE[0]//2,pos[1]+TILE_SIZE[1]//2
                         dx,dy=d[0]*TILE_SIZE[0]//2,d[1]*TILE_SIZE[1]//2
                         dx*=scale
                         dy*=scale
-                        gfxdraw.line(self._surface,x0,y0,x0+int(dx),y0+int(dy),(255, 255, 255))
+                        gfxdraw.line(self._surface,x0,y0,x0+int(dx),y0+int(dy),VISITE_COLOR)
+                
+                suf=self.font.render(f'{V[s]:.2f}',1,VISITE_COLOR,color)
+                pos[0]+=self.cell_size[0]*0.05
+                pos[1]+=self.cell_size[1]*0.05
+                self._surface.blit(suf,pos)
         
         # paint the elf
         bot_row, bot_col = self.world.state2idx(self.world.state)
@@ -84,10 +91,9 @@ class Renderer:
             int(pos[0]+TILE_SIZE[0]/2),
             int(pos[1]+TILE_SIZE[1]/2),
             int(TILE_SIZE[1] / 4),
-            (249, 12, 3)
+            AGENT_COLOR
          )
         
-
         if mode == "human":
             pygame.event.pump()
             pygame.display.update()

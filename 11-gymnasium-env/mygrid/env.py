@@ -44,8 +44,7 @@ class MiniGrid(Env):
     def __init__(
         self,
         render_mode: Optional[str] = None,
-        map_name="4x4",
-        is_slippery=True,
+        map_name="4x4"
     ):
         desc = np.asarray(MAPS[map_name], dtype="c")
         self.world=World(desc)
@@ -53,14 +52,14 @@ class MiniGrid(Env):
         nA=self.world.nA
         nS=self.world.nS
         self.visits=np.zeros((nS,nA))
-        nrow=self.world.nrow
-        ncol=self.world.ncol
-        #self.reward_range = (0, 1)
-   
+        self.V=np.zeros(nS)
         self.observation_space = spaces.Discrete(nS)
         self.action_space = spaces.Discrete(nA)
-
         self.render_mode = render_mode
+
+    def update_value(self, state: int,val:float):
+        self.V[state]=val
+
     def action_mask(self, state: int):
         mask = np.ones(self.world.nA, dtype=np.int8)
         nrow=self.world.nrow
@@ -75,6 +74,7 @@ class MiniGrid(Env):
         elif row==nrow-1:
             mask[DOWN]=0
         return mask
+    
     def step(self, a):
         s=self.world.state
         self.visits[s,a]+=1
@@ -109,6 +109,6 @@ class MiniGrid(Env):
             )
             return
         
-        return self.renderer.render(self.render_mode,self.visits)
+        return self.renderer.render(self.render_mode,self.visits,self.V)
 
  
