@@ -44,9 +44,12 @@ class MiniGrid(Env):
     def __init__(
         self,
         render_mode: Optional[str] = None,
-        map_name="4x4"
+        map_name="4x4",
+        is_terminate_reach_goal=False
     ):
-        desc = np.asarray(MAPS[map_name], dtype="c")
+        self.is_terminate_reach_goal=is_terminate_reach_goal
+        print(self.is_terminate_reach_goal)
+        self.desc = desc = np.asarray(MAPS[map_name], dtype="c")
         self.world=World(desc)
         self.renderer=Renderer(self.world,self.metadata['render_fps'])
         nA=self.world.nA
@@ -80,13 +83,17 @@ class MiniGrid(Env):
         self.visits[s,a]+=1
         transitions = self.world.P[s][a]
         i = categorical_sample([t[0] for t in transitions], self.np_random)
-        p, s, r, t = transitions[i]
+        p, s, r = transitions[i]
         self.world.state = s
-        self.world.lastaction = a
-
+        #self.world.lastaction = a
+        
+        row,col=self.world.state2idx(self.world.state)
+        terminated = False
+        if self.is_terminate_reach_goal and  self.desc[row][col] in b"G":
+            terminated=True
         if self.render_mode == "human":
             self.render()
-        return (int(s), r, t, False, {"prob": p,"action_mask": self.action_mask(s)})
+        return (int(s), r, terminated, False, {"prob": p,"action_mask": self.action_mask(s)})
 
     def reset(
         self,

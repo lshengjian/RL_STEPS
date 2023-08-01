@@ -3,12 +3,14 @@ from os import path
 from gymnasium.error import DependencyNotInstalled
 from .config import *
 from .world import World
-VISITE_COLOR=(255, 255, 255)
+VISITE_COLOR=(55, 55, 55)
 AGENT_COLOR=(249, 12, 3)
-TEXT_COLOR=(249, 12, 255)
+TEXT_COLOR=(0, 0, 0)
 class Renderer:
     def __init__(self,world:World,FPS:int=4):
         self.world=world
+        self.desc = self.world.desc.tolist()
+        assert isinstance(self.desc, list), f"desc should be a list or an array, got {self.desc}"
         self.FPS=FPS
         self._surface = None
         self.clock = None
@@ -45,11 +47,9 @@ class Renderer:
             self.clock = pygame.time.Clock()
 
         #self._surface.fill((0, 0, 0))
-        desc = self.world.desc.tolist()
-        assert isinstance(desc, list), f"desc should be a list or an array, got {desc}"
+        desc = self.desc
         nrow=self.world.nrow
         ncol=self.world.ncol
-        
         for y in range(nrow):
             for x in range(ncol):
                 pos = [x * self.cell_size[0], y * self.cell_size[1]]
@@ -92,7 +92,14 @@ class Renderer:
             int(pos[1]+TILE_SIZE[1]/2),
             int(TILE_SIZE[1] / 4),
             AGENT_COLOR
-         )
+        )
+        for i in range(1,nrow):
+            yi=i*TILE_SIZE[1]
+            gfxdraw.hline(self._surface,0,self.window_size[0],yi,TEXT_COLOR)
+        for i in range(1,ncol):
+            xi=i*TILE_SIZE[0]
+            gfxdraw.vline(self._surface,xi,0,self.window_size[1],TEXT_COLOR)
+
         
         if mode == "human":
             pygame.event.pump()

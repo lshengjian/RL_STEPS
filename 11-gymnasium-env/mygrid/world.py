@@ -7,6 +7,7 @@ class World:
     def __init__(self,desc:np.ndarray):
         
         self.desc=desc
+        
         self.nrow, self.ncol = nrow, ncol = desc.shape
         self.nA = nA = 5
         self.nS = nS = nrow * ncol
@@ -28,7 +29,7 @@ class World:
         ok,newrow, newcol = self.next(row, col, action)
         newstate =self.idx2state(newrow, newcol)
         newletter = self.desc[newrow, newcol]
-        terminated = bytes(newletter) in b"G"
+        #terminated = bytes(newletter) in b"G"
         reward=0
         if not ok:
             reward=OUT_BOUND
@@ -36,7 +37,7 @@ class World:
             reward = IN_GOAL
         elif newletter == b"X":
             reward = IN_OBSTACLE
-        return newstate, reward, terminated
+        return newstate, reward
 
     
     def idx2state(self,row, col):
