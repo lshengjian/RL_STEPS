@@ -28,7 +28,7 @@ class MiniGrid(Env):
 
     Reward schedule:
     - Reach goal: +1
-    - Reach firbidden: -1
+    - Reach forbidden: -1
     - Reach frozen: 0
 
     ## Episode End
@@ -48,19 +48,27 @@ class MiniGrid(Env):
         is_terminate_reach_goal=False
     ):
         self.is_terminate_reach_goal=is_terminate_reach_goal
-        print(self.is_terminate_reach_goal)
+        #print(self.is_terminate_reach_goal)
         self.desc = desc = np.asarray(MAPS[map_name], dtype="c")
         self.world=World(desc)
         self.renderer=Renderer(self.world,self.metadata['render_fps'])
-        nA=self.world.nA
-        nS=self.world.nS
-        self.visits=np.zeros((nS,nA))
-        self.V=np.zeros(nS)
+        self.nA=nA=self.world.nA
+        self.nS=nS=self.world.nS
+        self.H=np.zeros((nS,nA)) #visited history
+        self.P=np.ones((nS,nA),dtype=float)/nA #policy
+        self.V=np.zeros(nS)  #state value
         self.observation_space = spaces.Discrete(nS)
         self.action_space = spaces.Discrete(nA)
         self.render_mode = render_mode
 
-    def update_value(self, state: int,val:float):
+    def get_policy(self, state: int,action:int,):
+        return self.P[state,action]
+    def set_policy(self, state: int,action:int,val:float):
+        self.P[state,action]=val
+
+    def get_value(self, state: int):
+        return self.V[state]
+    def set_value(self, state: int,val:float):
         self.V[state]=val
 
     def action_mask(self, state: int):
@@ -80,7 +88,7 @@ class MiniGrid(Env):
     
     def step(self, a):
         s=self.world.state
-        self.visits[s,a]+=1
+        self.H[s,a]+=1
         transitions = self.world.P[s][a]
         i = categorical_sample([t[0] for t in transitions], self.np_random)
         p, s, r = transitions[i]
@@ -103,7 +111,7 @@ class MiniGrid(Env):
     ):
         super().reset(seed=seed)
         self.world.state = s= categorical_sample(self.world.initial_state_distrib, self.np_random)
-        self.visits*=0
+        self.H*=0
         self.lastaction = None
         if self.render_mode == "human":
             self.render()
@@ -116,6 +124,6 @@ class MiniGrid(Env):
             )
             return
         
-        return self.renderer.render(self.render_mode,self.visits,self.V)
+        return self.renderer.render(self.render_mode,self.H,self.V)
 
  

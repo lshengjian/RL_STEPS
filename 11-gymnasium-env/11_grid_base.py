@@ -2,7 +2,7 @@ from mygrid.env  import MiniGrid
 from mygrid.config import ACT_NAMES
 from random import random
 def main():
-   env = MiniGrid(render_mode="human",map_name="4x4",is_terminate_reach_goal=False)
+   env = MiniGrid(render_mode="human",map_name="8x8",is_terminate_reach_goal=True)
    observation, info = env.reset(seed=42)
    data=[0]*env.world.nS
    for _ in range(1000):
@@ -17,7 +17,7 @@ def main():
          observation, info = env.reset()
       else:
          observation=observation1
-         env.update_value(observation,random()*10)
+         env.set_value(observation,random()*10)
    env.close()
    print(data)
 

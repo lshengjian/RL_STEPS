@@ -17,8 +17,8 @@ class Renderer:
         nrow=self.world.nrow
         ncol=self.world.ncol
         # pygame utils
-        self.window_size = (TILE_SIZE[0] * ncol, TILE_SIZE[1] * nrow)
-        self.cell_size = TILE_SIZE
+        self.window_size = WINDOWS_SIZE
+        self.cell_size =  (WINDOWS_SIZE[0] // ncol, WINDOWS_SIZE[1] // nrow)
 
     def render(self, mode:str,visits:np.ndarray,V:np.ndarray=None):
         try:
@@ -34,7 +34,7 @@ class Renderer:
             if mode == "human":
                 pygame.display.init()
                 pygame.display.set_caption("My Mini Grid")
-                self.font  =  pygame.font.Font(None,20)
+                self.font  =  pygame.font.Font(None,26)
                 self._surface = pygame.display.set_mode(self.window_size)
             elif mode == "rgb_array":
                 self._surface = pygame.Surface(self.window_size)
@@ -50,9 +50,10 @@ class Renderer:
         desc = self.desc
         nrow=self.world.nrow
         ncol=self.world.ncol
+        w,h=self.cell_size
         for y in range(nrow):
             for x in range(ncol):
-                pos = [x * self.cell_size[0], y * self.cell_size[1]]
+                pos = [x * w, y * h]
                 rect = (*pos, *self.cell_size)
                 flag=desc[y][x]
                 flag = flag.decode()
@@ -63,16 +64,16 @@ class Renderer:
                 if visits[s,STAY]:
                     gfxdraw.aacircle(
                         self._surface,
-                        int(pos[0]+TILE_SIZE[0]/2),
-                        int(pos[1]+TILE_SIZE[1]/2),
-                        int(TILE_SIZE[1] / 6*visits[s,STAY]/total),
+                        int(pos[0]+w/2),
+                        int(pos[1]+h/2),
+                        int(h / 6*visits[s,STAY]/total),
                         VISITE_COLOR
                     )
                 for k,d in ACT_DIRS.items():
                     if visits[s,k]:
                         scale=visits[s,k]/total
-                        x0,y0=pos[0]+TILE_SIZE[0]//2,pos[1]+TILE_SIZE[1]//2
-                        dx,dy=d[0]*TILE_SIZE[0]//2,d[1]*TILE_SIZE[1]//2
+                        x0,y0=pos[0]+w//2,pos[1]+h//2
+                        dx,dy=d[0]*w//2,d[1]*h//2
                         dx*=scale
                         dy*=scale
                         gfxdraw.line(self._surface,x0,y0,x0+int(dx),y0+int(dy),VISITE_COLOR)
@@ -88,23 +89,24 @@ class Renderer:
         #last_action = self.world.lastaction if self.world.lastaction is not None else 0
         gfxdraw.filled_circle(
             self._surface,
-            int(pos[0]+TILE_SIZE[0]/2),
-            int(pos[1]+TILE_SIZE[1]/2),
-            int(TILE_SIZE[1] / 4),
+            int(pos[0]+w/2),
+            int(pos[1]+h/2),
+            int(h / 4),
             AGENT_COLOR
         )
         for i in range(1,nrow):
-            yi=i*TILE_SIZE[1]
+            yi=i*h
             gfxdraw.hline(self._surface,0,self.window_size[0],yi,TEXT_COLOR)
         for i in range(1,ncol):
-            xi=i*TILE_SIZE[0]
+            xi=i*w
             gfxdraw.vline(self._surface,xi,0,self.window_size[1],TEXT_COLOR)
 
         
         if mode == "human":
             pygame.event.pump()
             pygame.display.update()
-            self.clock.tick(self.FPS)
+            if self.FPS>0:
+                self.clock.tick(self.FPS)
         elif mode == "rgb_array":
             return np.transpose(
                 np.array(pygame.surfarray.pixels3d(self._surface)), axes=(1, 0, 2)

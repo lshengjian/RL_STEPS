@@ -23,13 +23,14 @@ COLORS={
    'X': (244,244,95),
    'G': (0,255,255),
 }
-TILE_SIZE=(64,48)
+WINDOWS_SIZE=(640,600)
 IN_GOAL=1
-IN_OBSTACLE=-1
+IN_FORBIDDEN=-1
 OUT_BOUND=-1
 
 MAPS = {
-    "4x4": ["S---", "-X-X", "---X", "X--G"],
+    "2x2": ["SX", "-G"],
+    "4x4": ["S--S", "-X-X", "---X", "X--G"],
     "8x8": [
         "S------S",
         "--------",
@@ -42,4 +43,4 @@ MAPS = {
     ]
 }
 
-FPS = 4
+FPS = 120

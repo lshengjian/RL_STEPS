@@ -14,7 +14,7 @@ class World:
         self.state=0
         self.lastaction=None
 
-        self.initial_state_distrib = np.array(desc == b"S").astype("float64").ravel()
+        self.initial_state_distrib = np.array(desc == b'S').astype("float64").ravel()
         self.initial_state_distrib /= self.initial_state_distrib.sum()
 
         self.P = {s: {a: [] for a in range(nA)} for s in range(nS)}#动作转移概率
@@ -23,9 +23,9 @@ class World:
                 s =self.idx2state(row, col)
                 for a in range(nA):
                     li = self.P[s][a]
-                    li.append((1.0, *self.update_probability_matrix(row, col, a)))
+                    li.append((1.0, *self.try_move(row, col, a)))
 
-    def update_probability_matrix(self,row:int, col:int, action:int):
+    def try_move(self,row:int, col:int, action:int):
         ok,newrow, newcol = self.next(row, col, action)
         newstate =self.idx2state(newrow, newcol)
         newletter = self.desc[newrow, newcol]
@@ -36,7 +36,7 @@ class World:
         elif newletter == b"G":
             reward = IN_GOAL
         elif newletter == b"X":
-            reward = IN_OBSTACLE
+            reward = IN_FORBIDDEN
         return newstate, reward
 
     
