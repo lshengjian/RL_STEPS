@@ -112,7 +112,7 @@ class MiniGrid(Env):
         super().reset(seed=seed)
         self.world.state = s= categorical_sample(self.world.initial_state_distrib, self.np_random)
         self.H*=0
-        self.lastaction = None
+        #self.lastaction = None
         if self.render_mode == "human":
             self.render()
         return int(s), {"prob": 1,"action_mask": self.action_mask(s)}

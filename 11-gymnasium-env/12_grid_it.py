@@ -50,15 +50,21 @@ def main():
    env.V=env0.V
 
    #env.renderer.FPS=20
-   for _ in range(30):
+   for _ in range(1000):
       update_policy(env)
       pi=env.P[s]
       a=categorical_sample(pi,env.np_random)
-      s, *_ = env.step(a)
+      s,  r, terminated, truncated, _  = env.step(a)
+      if terminated or truncated:
+         time.sleep(2)
+         s,_=env.reset()
+         #print('reset',s)
+         #break
+
 
    env.close()
 
 
 if __name__ == "__main__":
    main()
-   time.sleep(5)
+   
