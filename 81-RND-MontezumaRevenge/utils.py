@@ -20,12 +20,11 @@ class RunningMeanStd(object):
         tot_count = self.count + batch_count
 
         new_mean = self.mean + delta * batch_count / tot_count
+        new_count = batch_count + self.count
         m_a = self.var * (self.count)
         m_b = batch_var * (batch_count)
-        M2 = m_a + m_b + np.square(delta) * self.count * batch_count / (self.count + batch_count)
-        new_var = M2 / (self.count + batch_count)
-
-        new_count = batch_count + self.count
+        M2 = m_a + m_b + np.square(delta) * self.count * batch_count / new_count
+        new_var = M2 / new_count
 
         self.mean = new_mean
         self.var = new_var

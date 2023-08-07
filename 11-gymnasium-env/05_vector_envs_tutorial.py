@@ -11,8 +11,8 @@ from tqdm import tqdm
 import gymnasium as gym
 
 # environment hyperparams
-n_envs = 10
-n_updates = 10000
+n_envs = 32
+n_updates = 6000 #10000
 n_steps_per_update = 128
 randomize_domain = True
 
@@ -273,7 +273,7 @@ def main():
     action_num = envs.single_action_space.n
 
     # set the device
-    use_cuda = False
+    use_cuda = True
     if use_cuda:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     else:

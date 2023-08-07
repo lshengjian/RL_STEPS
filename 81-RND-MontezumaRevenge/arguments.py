@@ -9,7 +9,7 @@ def get_args():
                         help='Algorithm to use: rnd | ppo')
     parser.add_argument('--lr', type=float, default=1e-4,
                         help='Learning rate (default: 1e-4)')
-    parser.add_argument('--num-worker', type=int, default=32,
+    parser.add_argument('--num-worker', type=int, default=16,
                         help='Number of workers (CPU processes) to use (default: 16)')
     parser.add_argument('--num-step', type=int, default=128,
                         help='Number of forward steps (default: 128)')
@@ -67,7 +67,7 @@ def get_args():
         args.log_dir = os.path.join("runs", args.log_dir)
     args.sticky_action = not args.no_sticky_action
 
-    # print("GPU training: ", args.cuda)
-    # print("Sticky actions: ", args.sticky_action)
+    print("GPU training: ", args.cuda)
+    print("Sticky actions: ", args.sticky_action)
 
     return args
