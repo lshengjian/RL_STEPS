@@ -1,248 +1,149 @@
-import numpy as np
-import os
-import gymnasium as gym
-import torch.nn.functional as F
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-from torch.distributions.categorical import Categorical
-from gymnasium.wrappers import AtariPreprocessing,FrameStack
-
-from model import CnnActorCriticNetwork, RNDModel
-from utils import RunningMeanStd, RewardForwardFilter
-from arguments import get_args
+from agents import *
+from envs import get_envs,make_env
+from utils import *
+from config import *
+from torch.multiprocessing import Pipe
 
 from tensorboardX import SummaryWriter
 
-def get_action(model, device, state):
-    state = torch.Tensor(state).to(device)
-    state = state.float()
-    action_probs, value_ext, value_int = model(state)
-    action_dist = Categorical(action_probs)
-    action = action_dist.sample()
+import numpy as np
 
-    return action.data.cpu().numpy().squeeze(), value_ext.data.cpu().numpy().squeeze(), value_int.data.cpu().numpy().squeeze(), action_probs.detach().cpu()
-
-
-def compute_intrinsic_reward(rnd, device, next_obs):
-    next_obs = torch.FloatTensor(next_obs).to(device)
-
-    target_next_feature = rnd.target(next_obs)
-    predict_next_feature = rnd.predictor(next_obs)
-    intrinsic_reward = (target_next_feature - predict_next_feature).pow(2).sum(1) / 2
-
-    return intrinsic_reward.data.cpu().numpy()
-
-
-def make_train_data(reward, done, value, gamma, gae_lambda, num_step, num_worker, use_gae):
-    discounted_return = np.empty([num_worker, num_step])
-
-    # Discounted Return
-    if use_gae:
-        gae = np.zeros_like([num_worker, ])
-        for t in range(num_step - 1, -1, -1):
-            delta = reward[:, t] + gamma * value[:, t + 1] * (1 - done[:, t]) - value[:, t]
-            gae = delta + gamma * gae_lambda * (1 - done[:, t]) * gae
-
-            discounted_return[:, t] = gae + value[:, t]
-
-            # For Actor
-        adv = discounted_return - value[:, :-1]
-
-    else:
-        running_add = value[:, -1]
-        for t in range(num_step - 1, -1, -1):
-            running_add = reward[:, t] + gamma * running_add * (1 - done[:, t])
-            discounted_return[:, t] = running_add
-
-        # For Actor
-        adv = discounted_return - value[:, :-1]
-
-    return discounted_return.reshape([-1]), adv.reshape([-1])
-
-
-def train_model(args, device, output_size, model, rnd, optimizer, s_batch, target_ext_batch, target_int_batch, y_batch, adv_batch, next_obs_batch, old_action_probs):
-    epoch = 3
-    update_proportion = 0.25
-    s_batch = torch.FloatTensor(s_batch).to(device)
-    target_ext_batch = torch.FloatTensor(target_ext_batch).to(device)
-    target_int_batch = torch.FloatTensor(target_int_batch).to(device)
-    y_batch = torch.LongTensor(y_batch).to(device)
-    adv_batch = torch.FloatTensor(adv_batch).to(device)
-    next_obs_batch = torch.FloatTensor(next_obs_batch).to(device)
-
-    sample_range = np.arange(len(s_batch))
-    forward_mse = nn.MSELoss(reduction='none')
-
-    with torch.no_grad():
-        action_probs_old_list = torch.stack(old_action_probs).permute(1, 0, 2).contiguous().view(-1, output_size).to(device)
-
-        m_old = Categorical(action_probs_old_list)
-        log_prob_old = m_old.log_prob(y_batch)
-        # ------------------------------------------------------------
-
-    for i in range(epoch):
-        np.random.shuffle(sample_range)
-        for j in range(int(len(s_batch) / args.batch_size)):
-            sample_idx = sample_range[args.batch_size * j:args.batch_size * (j + 1)]
-
-            # --------------------------------------------------------------------------------
-            # for Curiosity-driven(Random Network Distillation)
-            predict_next_state_feature, target_next_state_feature = rnd(next_obs_batch[sample_idx])
-
-            forward_loss = forward_mse(predict_next_state_feature, target_next_state_feature.detach()).mean(-1)
-            # Proportion of exp used for predictor update
-            mask = torch.rand(len(forward_loss)).to(device)
-            mask = (mask < update_proportion).type(torch.FloatTensor).to(device)
-            forward_loss = (forward_loss * mask).sum() / torch.max(mask.sum(), torch.Tensor([1]).to(device))
-            # ---------------------------------------------------------------------------------
-
-            action_probs, value_ext, value_int = model(s_batch[sample_idx])
-            m = Categorical(action_probs)
-            log_prob = m.log_prob(y_batch[sample_idx])
-
-            ratio = torch.exp(log_prob - log_prob_old[sample_idx])
-
-            surr1 = ratio * adv_batch[sample_idx]
-            surr2 = torch.clamp(
-                ratio,
-                1.0 - args.eps,
-                1.0 + args.eps) * adv_batch[sample_idx]
-
-            actor_loss = -torch.min(surr1, surr2).mean()
-            critic_ext_loss = F.mse_loss(value_ext.sum(1), target_ext_batch[sample_idx])
-            critic_int_loss = F.mse_loss(value_int.sum(1), target_int_batch[sample_idx])
-
-            critic_loss = critic_ext_loss + critic_int_loss
-
-            entropy = m.entropy().mean()
-
-            optimizer.zero_grad()
-            loss = actor_loss + 0.5 * critic_loss - args.entropy_coef * entropy + forward_loss
-            loss.backward()
-            optimizer.step()
-def make_env():
-   env = gym.make("MontezumaRevengeNoFrameskip-v4", render_mode="rgb_array",obs_type="rgb")
-   env= AtariPreprocessing(env,frame_skip=4,grayscale_newaxis=False,scale_obs=True)
-   #env = FrameStack(env, 4)
-   return env
 
 def main():
-    args = get_args()
-    device = torch.device('cuda' if args.cuda else 'cpu')
+    #print({section: dict(config[section]) for section in config.sections()})
+    train_method = default_config['TrainMethod']
+    env_id = default_config['EnvID']
+    num_worker = int(default_config['NumEnv'])
 
-    env = gym.make(args.env_name)
+    env = make_env()
 
     input_size = env.observation_space.shape  # 4
     output_size = env.action_space.n  # 2
 
-    if 'Breakout' in args.env_name:
-        output_size -= 1
+
 
     env.close()
+    del env
+
+    is_load_model = False
     is_render = False
-    if not os.path.exists(args.save_dir):
-        os.makedirs(args.save_dir) 
+    model_path = 'models/{}.model'.format(env_id)
+    predictor_path = 'models/{}.pred'.format(env_id)
+    target_path = 'models/{}.target'.format(env_id)
+
+    writer = SummaryWriter()
+
+    use_cuda = default_config.getboolean('UseGPU')
+    use_gae = default_config.getboolean('UseGAE')
+    use_noisy_net = default_config.getboolean('UseNoisyNet')
+
+    lam = float(default_config['Lambda'])
     
-    
 
-    model_path = os.path.join(args.save_dir, args.env_name + '.model')
-    predictor_path = os.path.join(args.save_dir, args.env_name + '.pred')
-    target_path = os.path.join(args.save_dir, args.env_name + '.target')    
+    num_step = int(default_config['NumStep'])
 
+    ppo_eps = float(default_config['PPOEps'])
+    epoch = int(default_config['Epoch'])
+    mini_batch = int(default_config['MiniBatch'])
+    batch_size = int(num_step * num_worker / mini_batch)
+    learning_rate = float(default_config['LearningRate'])
+    entropy_coef = float(default_config['Entropy'])
+    gamma = float(default_config['Gamma'])
+    int_gamma = float(default_config['IntGamma'])
+    clip_grad_norm = float(default_config['ClipGradNorm'])
+    ext_coef = float(default_config['ExtCoef'])
+    int_coef = float(default_config['IntCoef'])
 
-    writer = SummaryWriter(log_dir=args.log_dir)
+    sticky_action = default_config.getboolean('StickyAction')
+    action_prob = float(default_config['ActionProb'])
+    life_done = default_config.getboolean('LifeDone')
 
     reward_rms = RunningMeanStd()
     obs_rms = RunningMeanStd(shape=(1, 1, 84, 84))
-    discounted_reward = RewardForwardFilter(args.ext_gamma)
+    pre_obs_norm_step = int(default_config['ObsNormStep'])
+    discounted_reward = RewardForwardFilter(int_gamma)
 
-    model = CnnActorCriticNetwork(input_size, output_size, args.use_noisy_net)
-    rnd = RNDModel(input_size, output_size)
-    model = model.to(device)
-    rnd = rnd.to(device)
-    optimizer = optim.Adam(list(model.parameters()) + list(rnd.predictor.parameters()), lr=args.lr)
-   
-    if args.load_model:
-        if args.cuda:
-            model.load_state_dict(torch.load(model_path))
-        else:
-            model.load_state_dict(torch.load(model_path, map_location='cpu'))
+    agent = RNDAgent(
+        input_size,
+        output_size,
+        num_worker,
+        num_step,
+        gamma,
+        lam=lam,
+        learning_rate=learning_rate,
+        ent_coef=entropy_coef,
+        clip_grad_norm=clip_grad_norm,
+        epoch=epoch,
+        batch_size=batch_size,
+        ppo_eps=ppo_eps,
+        use_cuda=use_cuda,
+        use_gae=use_gae,
+        use_noisy_net=use_noisy_net
+    )
 
 
+    env=get_envs(num_worker)
+    states,info=env.reset()
 
-    states = np.zeros([args.num_worker, 4, 84, 84])
+    #= np.zeros([num_worker, 4, 84, 84])
 
-    sample_env_index = 0   # Sample Environment index to log
     sample_episode = 0
     sample_rall = 0
     sample_step = 0
+    sample_env_idx = 0
     sample_i_rall = 0
     global_update = 0
     global_step = 0
 
-    # normalize observation
-    print('Initializes observation normalization...')
+    # normalize obs
+    print('Start to initailize observation normalization parameter.....')
     next_obs = []
-    env = gym.vector.AsyncVectorEnv([ make_env ]*args.num_worker)
-    env.reset()
+    for step in range( pre_obs_norm_step):
+        actions = np.random.randint(0, output_size, size=(num_worker,))
+        obs,*_=env.step(actions)
 
-    for step in range(args.num_step * args.pre_obs_norm_steps):
-        actions = np.random.randint(0, output_size, size=(args.num_worker,))
-        next_states, rewards,realdones, dones, infos=env.step(actions)
-        #print(next_state.shape)
-        next_obs.extend(next_states)
-        #print(len(next_obs))
+        
 
-        # for parent_conn, action in zip(parent_conns, actions):
-        #     parent_conn.send(action)
+        for ob in obs:
+            next_obs.append(ob[-1, :, :].reshape([1, 84, 84]))
 
-        # for parent_conn in parent_conns:
-        #     next_state, reward, done, realdone, log_reward = parent_conn.recv()
-        #     next_obs.append(next_state[3, :, :].reshape([1, 84, 84]))
-
-        if len(next_obs) % (args.num_step * args.num_worker) == 0:
+        if len(next_obs) % (num_step * num_worker) == 0:
             next_obs = np.stack(next_obs)
             obs_rms.update(next_obs)
-            #print(next_obs.shape)
+            print(obs_rms.mean[0][0][40,40:50])
             next_obs = []
-    #print(obs_rms.mean.shape)
+    print('End to initalize...')
     
-    print('Training...')
-    states,_=env.reset()
+
     while True:
-        total_state, total_reward, total_done, total_next_state, total_action, total_int_reward, total_next_obs, total_ext_values, total_int_values, total_action_probs = [], [], [], [], [], [], [], [], [], []
-        global_step += (args.num_worker * args.num_step)
+        total_state, total_reward, total_done, total_next_state, total_action, total_int_reward, total_next_obs, total_ext_values, total_int_values, total_policy, total_policy_np = \
+            [], [], [], [], [], [], [], [], [], [], []
+        global_step += (num_worker * num_step)
         global_update += 1
 
         # Step 1. n-step rollout
-        for _ in range(args.num_step):
-            actions, value_ext, value_int, action_probs = get_action(model, device, states)
-            next_states, rewards,real_dones, dones, infos=env.step(actions)
+        for _ in range(num_step):
+            actions, value_ext, value_int, policy = agent.get_action(states)
+            next_obs=[]
 
-            # for parent_conn, action in zip(parent_conns, actions):
-            #     parent_conn.send(action)
+            next_states, rewards, dones, timeouts, info=env.step(actions)
+            #log_rewards, next_obs = [], [], [], [], [], []
+            for ob in next_states:
+                next_obs.append(ob[-1, :, :].reshape([1, 84, 84]))
 
-            # next_states, rewards, dones, real_dones, log_rewards, next_obs = [], [], [], [], [], []
-            # for parent_conn in parent_conns:
-            #     next_state, reward, done, real_done, log_reward = parent_conn.recv()
-            #     next_states.append(next_state)
-            #     rewards.append(reward)
-            #     dones.append(done)
-            #     real_dones.append(real_done)
-            #     log_rewards.append(log_reward)
-            #     next_obs.append(next_state[3, :, :].reshape([1, 84, 84]))
-
-
+            next_states = np.stack(next_states)
+            rewards = np.hstack(rewards)
+            dones = np.hstack(dones)
+            timeouts = np.hstack(timeouts)
+            next_obs = np.stack(next_obs)
 
             # total reward = int reward + ext Reward
-            intrinsic_reward = compute_intrinsic_reward(rnd, device, 
-                ((next_states - obs_rms.mean) / np.sqrt(obs_rms.var)).clip(-5, 5))
+            intrinsic_reward = agent.compute_intrinsic_reward(
+                ((next_obs - obs_rms.mean) / np.sqrt(obs_rms.var)).clip(-5, 5))
             intrinsic_reward = np.hstack(intrinsic_reward)
-            sample_i_rall += intrinsic_reward[sample_env_index]
+            sample_i_rall += intrinsic_reward[sample_env_idx]
 
-            total_next_obs.append(next_states)
+            total_next_obs.append(next_obs)
             total_int_reward.append(intrinsic_reward)
             total_state.append(states)
             total_reward.append(rewards)
@@ -250,14 +151,15 @@ def main():
             total_action.append(actions)
             total_ext_values.append(value_ext)
             total_int_values.append(value_int)
-            total_action_probs.append(action_probs)
+            total_policy.append(policy)
+            total_policy_np.append(policy.cpu().numpy())
 
             states = next_states[:, :, :, :]
 
-            sample_rall += rewards[sample_env_index]
+            sample_rall += rewards[sample_env_idx]
 
             sample_step += 1
-            if real_dones[sample_env_index]:
+            if timeouts[sample_env_idx]:
                 sample_episode += 1
                 writer.add_scalar('data/reward_per_epi', sample_rall, sample_episode)
                 writer.add_scalar('data/reward_per_rollout', sample_rall, global_update)
@@ -267,7 +169,7 @@ def main():
                 sample_i_rall = 0
 
         # calculate last next value
-        _, value_ext, value_int, _ = get_action(model, device, states)
+        _, value_ext, value_int, _ = agent.get_action(states)
         total_ext_values.append(value_ext)
         total_int_values.append(value_int)
         # --------------------------------------------------
@@ -279,48 +181,48 @@ def main():
         total_next_obs = np.stack(total_next_obs).transpose([1, 0, 2, 3, 4]).reshape([-1, 1, 84, 84])
         total_ext_values = np.stack(total_ext_values).transpose()
         total_int_values = np.stack(total_int_values).transpose()
-        total_logging_action_probs = np.vstack(total_action_probs)
+        total_logging_policy = np.vstack(total_policy_np)
 
         # Step 2. calculate intrinsic reward
         # running mean intrinsic reward
         total_int_reward = np.stack(total_int_reward).transpose()
-        total_reward_per_env = np.array([discounted_reward.update(reward_per_step) for reward_per_step in total_int_reward.T])
+        total_reward_per_env = np.array([discounted_reward.update(reward_per_step) for reward_per_step in
+                                         total_int_reward.T])
         mean, std, count = np.mean(total_reward_per_env), np.std(total_reward_per_env), len(total_reward_per_env)
         reward_rms.update_from_moments(mean, std ** 2, count)
 
         # normalize intrinsic reward
         total_int_reward /= np.sqrt(reward_rms.var)
-        writer.add_scalar('data/int_reward_per_epi', np.sum(total_int_reward) / args.num_worker, sample_episode)
-        writer.add_scalar('data/int_reward_per_rollout', np.sum(total_int_reward) / args.num_worker, global_update)
+        writer.add_scalar('data/int_reward_per_epi', np.sum(total_int_reward) / num_worker, sample_episode)
+        writer.add_scalar('data/int_reward_per_rollout', np.sum(total_int_reward) / num_worker, global_update)
         # -------------------------------------------------------------------------------------------
 
         # logging Max action probability
-        writer.add_scalar('data/max_prob', total_logging_action_probs.max(1).mean(), sample_episode)
+        writer.add_scalar('data/max_prob', softmax(total_logging_policy).max(1).mean(), sample_episode)
 
         # Step 3. make target and advantage
         # extrinsic reward calculate
+        # print(total_reward.shape)
+        # print(total_done.shape)
+        # print(total_ext_values.shape)
         ext_target, ext_adv = make_train_data(total_reward,
                                               total_done,
                                               total_ext_values,
-                                              args.ext_gamma,
-                                              args.gae_lambda,
-                                              args.num_step,
-                                              args.num_worker,
-                                              args.use_gae)
+                                              gamma,
+                                              num_step,
+                                              num_worker)
 
         # intrinsic reward calculate
         # None Episodic
         int_target, int_adv = make_train_data(total_int_reward,
                                               np.zeros_like(total_int_reward),
                                               total_int_values,
-                                              args.int_gamma,
-                                              args.gae_lambda,
-                                              args.num_step,
-                                              args.num_worker,
-                                              args.use_gae)
+                                              int_gamma,
+                                              num_step,
+                                              num_worker)
 
         # add ext adv and int adv
-        total_adv = int_adv * args.int_coef + ext_adv * args.ext_coef
+        total_adv = int_adv * int_coef + ext_adv * ext_coef
         # -----------------------------------------------
 
         # Step 4. update obs normalize param
@@ -328,16 +230,15 @@ def main():
         # -----------------------------------------------
 
         # Step 5. Training!
-        train_model(args, device, output_size, model, rnd, optimizer, 
-                        np.float32(total_state) / 255., ext_target, int_target, total_action,
-                        total_adv, ((total_next_obs - obs_rms.mean) / np.sqrt(obs_rms.var)).clip(-5, 5),
-                        total_action_probs)
+        agent.train_model(total_state, ext_target, int_target, total_action,
+                          total_adv, ((total_next_obs - obs_rms.mean) / np.sqrt(obs_rms.var)).clip(-5, 5),
+                          total_policy)
 
-        if global_step % (args.num_worker * args.num_step * args.save_interval) == 0:
+        if global_step % (num_worker * num_step * 100) == 0:
             print('Now Global Step :{}'.format(global_step))
-            torch.save(model.state_dict(), model_path)
-            torch.save(rnd.predictor.state_dict(), predictor_path)
-            torch.save(rnd.target.state_dict(), target_path)
+            torch.save(agent.model.state_dict(), model_path)
+            torch.save(agent.rnd.predictor.state_dict(), predictor_path)
+            torch.save(agent.rnd.target.state_dict(), target_path)
 
 
 if __name__ == '__main__':
