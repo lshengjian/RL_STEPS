@@ -27,7 +27,7 @@ def update_value(grid:MiniGrid):
    print('state value updated!')
 def update_policy(grid:MiniGrid):
    for s in range(grid.nS):
-      pi=grid.P[s]
+      pi=grid.PI[s]
       r,c=grid.world.state2idx(s)
       data=np.zeros(grid.nA,dtype=float)
       for a in range(grid.nA):
@@ -52,7 +52,7 @@ def main():
    #env.renderer.FPS=20
    for _ in range(1000):
       update_policy(env)
-      pi=env.P[s]
+      pi=env.PI[s]
       a=categorical_sample(pi,env.np_random)
       s,  r, terminated, truncated, _  = env.step(a)
       if terminated or truncated:

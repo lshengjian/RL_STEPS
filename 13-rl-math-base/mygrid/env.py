@@ -37,21 +37,22 @@ class MiniGrid(Env):
     """
 
     metadata = {
-        "render_modes": ["human", "rgb_array"],
-        "render_fps": FPS,
+        "render_modes": ["human", "none"],
+        "render_fps": 4,
     }
 
     def __init__(
         self,
         render_mode: Optional[str] = None,
         map_name="4x4",
+        fps=4,
         is_terminate_reach_goal=False
     ):
         self.is_terminate_reach_goal=is_terminate_reach_goal
         #print(self.is_terminate_reach_goal)
         self.desc = desc = np.asarray(MAPS[map_name], dtype="c")
         self.world=World(desc)
-        self.renderer=Renderer(self.world,self.metadata['render_fps'])
+        self.renderer=Renderer(self.world,fps)
         self.nA=nA=self.world.nA
         self.nS=nS=self.world.nS
         self.H=np.zeros((nS,nA)) #visited history
@@ -91,7 +92,7 @@ class MiniGrid(Env):
         self.H[s,a]+=1
         transitions = self.world.P[s][a]
         i = categorical_sample([t[0] for t in transitions], self.np_random)
-        p, s, r = transitions[i]
+        p, s, r,done = transitions[i]
         self.world.state = s
         #self.world.lastaction = a
         

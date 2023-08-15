@@ -37,7 +37,7 @@ def evaluate_agent(q_table, env, num_trials):
 
 @click.command()
 @click.option('--num-episodes', default=NUM_EPISODES, help='Number of episodes to train on', show_default=True)
-@click.option('--q-path', default="taxi.pickle", help='Path to read the q-table values from', show_default=True)
+@click.option('--q-path', default="taxi3.pickle", help='Path to read the q-table values from', show_default=True)
 def main(num_episodes, q_path):
     env = gym.make("Taxi-v3",render_mode='human')
     q_path=path.join(path.dirname(__file__), "data/"+q_path)
