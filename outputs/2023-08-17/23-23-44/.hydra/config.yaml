@@ -1,20 +1,13 @@
-# task and env
 env:
   map_name: 4x4
   fps: 240
-
 simulate:
   steps: 200
-  episode_length: 5000
+  episode_length: 500
   epochs: 600
-
-  
-# Optim
 optim:
   batch_size: 100
   repeats: 4
-  eps: 1e-4
+  eps: 0.0001
   gamma: 0.9
   learning_rate: 0.0015
-
-
