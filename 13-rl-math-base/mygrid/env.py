@@ -4,7 +4,7 @@ import gymnasium as gym
 from gymnasium import Env, spaces
 from gymnasium.utils import seeding
 
-from .utils import categorical_sample
+
 from .config import *
 from .world import World
 from .renderer import Renderer
@@ -52,6 +52,7 @@ class MiniGrid(Env):
         #print(self.is_terminate_reach_goal)
         self.desc = desc = np.asarray(MAPS[map_name], dtype="c")
         self.world=World(desc)
+        self.metadata['render_fps']=fps
         self.renderer=Renderer(self.world,fps)
         self.nA=nA=self.world.nA
         self.nS=nS=self.world.nS
@@ -90,19 +91,12 @@ class MiniGrid(Env):
     def step(self, a):
         s=self.world.state
         self.H[s,a]+=1
-        transitions = self.world.P[s][a]
-        i = categorical_sample([t[0] for t in transitions], self.np_random)
-        p, s, r,done = transitions[i]
-        self.world.state = s
-        #self.world.lastaction = a
         
-        row,col=self.world.state2idx(self.world.state)
-        terminated = False
-        if self.is_terminate_reach_goal and  self.desc[row][col] in b"G":
-            terminated=True
+        s, r, terminated=self.world.move(a,self.np_random)
+        terminated = terminated if  self.is_terminate_reach_goal else False
         if self.render_mode == "human":
             self.render()
-        return (int(s), r, terminated, False, {"prob": p,"action_mask": self.action_mask(s)})
+        return (int(s), r, terminated, False, {"prob": 1,"action_mask": self.action_mask(s)})
 
     def reset(
         self,
@@ -111,7 +105,9 @@ class MiniGrid(Env):
         options: Optional[dict] = None,
     ):
         super().reset(seed=seed)
-        self.world.state = s= categorical_sample(self.world.initial_state_distrib, self.np_random)
+        self.world.reset(self.np_random)
+        s=self.world.state
+        
         self.H*=0
         #self.lastaction = None
         if self.render_mode == "human":

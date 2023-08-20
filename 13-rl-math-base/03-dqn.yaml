@@ -1,0 +1,14 @@
+# task and env
+env:
+  map_name: 4x4
+  fps: 240
+
+  
+# Optim
+optim:
+  print_interval: 20
+  learning_rate: 0.0005
+  eps: 1e-4
+  gamma: 0.9
+
+

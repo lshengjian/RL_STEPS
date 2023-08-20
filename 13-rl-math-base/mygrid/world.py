@@ -1,6 +1,7 @@
 from typing import List, Optional
 import numpy as np
 from gymnasium.utils import seeding
+from .utils import categorical_sample
 from .config import *
 
 class World:
@@ -25,6 +26,19 @@ class World:
                     li = self.P[s][a]
                     li.append((1.0, *self.try_move(row, col, a)))
 
+    def reset(self,np_random=None):
+        self.state =  categorical_sample(self.initial_state_distrib, np_random)
+
+    def move(self, action:int,np_random=None):
+        transitions = self.P[self.state][action]
+        i = categorical_sample([t[0] for t in transitions], np_random)
+        p, s, r,terminated = transitions[i]
+        self.state=s
+        self.lastaction=action
+        return s, r,terminated
+
+
+
     def try_move(self,row:int, col:int, action:int):
         ok,newrow, newcol = self.next(row, col, action)
         newstate =self.idx2state(newrow, newcol)
@@ -39,7 +53,19 @@ class World:
             reward = IN_FORBIDDEN
         return newstate, reward,terminated
 
-    
+    def get_vec(self):
+        r,c=self.state2idx(self.state)
+        r+=1
+        c+=1
+        x,y=c,r
+        return 1,x,y,x**2,y**2,x*y
+    def get_vec_state(self,state):
+        r,c=self.state2idx(state)
+        r+=1
+        c+=1
+        x,y=c/self.ncol,r/self.nrow
+        return 1,x,y,x**2,y**2,x*y
+
     def idx2state(self,row, col):
         return row*self.ncol+col
     
