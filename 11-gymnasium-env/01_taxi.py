@@ -1,6 +1,6 @@
 import gymnasium as gym
 
-NUM_EPISODES = 100
+NUM_EPISODES = 10
 
 def evaluate_agent(env:gym.Env, num_trials):
     total_epochs, total_penalties = 0, 0

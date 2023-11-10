@@ -1,9 +1,9 @@
 import gymnasium as gym
 import numpy as np
 from gymnasium.utils.play import play
-from myenv.myenv  import MyLakeEnv
+from mylake.myenv  import MyLakeEnv
 
-from myenv.config import *
+from mylake.config import *
 
 keys_to_action={
     "a": LEFT ,

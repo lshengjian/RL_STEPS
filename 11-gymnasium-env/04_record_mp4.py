@@ -6,7 +6,7 @@ def demo():
    _ = env.reset()
    step_starting_index = 0
    episode_index = 0
-   for step_index in range(199): 
+   for step_index in range(59): 
       action = env.action_space.sample()
       _, _, terminated, truncated, _ = env.step(action)
 

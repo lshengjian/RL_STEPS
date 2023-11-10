@@ -3,6 +3,5 @@ __pycache__/
 .pytest_cache/
 **/videos/
 **/data/
-**/bak/
 **/runs/
 **/output/
