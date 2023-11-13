@@ -1,7 +1,7 @@
 import numpy as np
 from gymnasium.error import DependencyNotInstalled
 from ..data import *
-from random import randint
+
 import esper
 
 
@@ -38,11 +38,6 @@ class RenderSystem(esper.Processor):
         self.draw_info(r)
  
 
-
-            
-            
-            
-        # Flip the framebuffers
         self._pygame.display.flip()
         if self.render_mode == "human":
             self._pygame.event.pump()
@@ -68,15 +63,9 @@ class RenderSystem(esper.Processor):
 
     def draw_history(self, r):
         agent:Agent=esper.get_component(Agent)[0][1]
-        for i in range(len(agent.visited)):
-            t1,_,t2,_ =  agent.visited[i]
+        for t1,_,t2,_,dx,dy in agent.visited:
             x1, y1 = t1.position
             x2, y2 = t2.position
-           
-            k=r//30
-            if i not in self.offsets:
-                self.offsets[i]=randint(-k,k),randint(-k,k)
-            dx,dy=self.offsets[i]
             if t1==t2:
                 self._gfxdraw.circle(self._surface, x1, y1, r//8, (0, 0, 220,30))
             else:
@@ -92,6 +81,12 @@ class RenderSystem(esper.Processor):
         for i in range(1,c):
             self._gfxdraw.vline(self._surface,i*tile_w,0,tile_h*r,(0,0,0))
 
+    def close(self):
+        if self._surface is not None:
+            import pygame
+
+            pygame.display.quit()
+            pygame.quit()
     def render(self):
         # ,visits:np.ndarray,V:np.ndarray=None
         mode = self.render_mode
@@ -100,7 +95,6 @@ class RenderSystem(esper.Processor):
         try:
             import pygame
             from pygame import gfxdraw
-
             self._pygame = pygame
             self._gfxdraw = gfxdraw
         except ImportError as e:
@@ -128,8 +122,6 @@ class RenderSystem(esper.Processor):
 
         if self._clock is None:
             self._clock = pygame.time.Clock()
-
-        # self.process()
 
         if mode == "rgb_array":
             return np.transpose(

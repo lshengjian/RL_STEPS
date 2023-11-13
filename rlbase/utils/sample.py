@@ -9,10 +9,7 @@ from tqdm import tqdm
 
     
 
-def update_policy(pi_s:np.ndarray,max_q_action:int,eps):
-    nA=len(pi_s)
-    pi_s[:]=eps/nA
-    pi_s[max_q_action]=1-(pi_s[0]*nA-1)
+
     
 def categorical_sample(prob_n, np_random: np.random.Generator):
     """Sample from categorical distribution where each row specifies class probabilities."""
@@ -38,7 +35,11 @@ def greedy_select(logics, np_random: np.random.Generator):
     logics/=logics.sum()  #0~1
     best_a = np.argwhere(logics==np.max(logics)).flatten()
     return choice(best_a)
-
+'''
+def update_policy(pi_s:np.ndarray,max_q_action:int,eps):
+    nA=len(pi_s)
+    pi_s[:]=eps/nA
+    pi_s[max_q_action]=1-(pi_s[0]*nA-1)
 def plot_steps_and_rewards(rewards_df, steps_df,savefn='./data/demo.png'):
     """Plot the steps and rewards from dataframes."""
     fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(15, 5))
@@ -70,11 +71,4 @@ def plot_steps_and_rewards(rewards_df, steps_df,savefn='./data/demo.png'):
 # 	plt.title('State-Value Function')
 # 	plt.show()
         
-if __name__ == "__main__":
-   data=[1.0,2.0,3.0,3.0]
-   d=greedy_select(data)
-   print(d)
-   d=greedy_select(data)
-   print(d)
-   res_all = pd.DataFrame()
-   st_all = pd.DataFrame()
+'''

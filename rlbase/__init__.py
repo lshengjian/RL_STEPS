@@ -1,2 +1,2 @@
-from .grid.env import MiniGrid
-from .grid.world import World
+from .envs.mini_grid import MiniGrid
+from .envs.world import World
