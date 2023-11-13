@@ -1,13 +1,11 @@
 import numpy as np
-from gymnasium.utils import seeding
+
 from random import choice
 import matplotlib.pyplot as plt
 import numpy as np
 # import pandas as pd
 # import seaborn as sns
 from tqdm import tqdm
-
-default_rand_generator=seeding.np_random(1234)[0]
 
     
 
@@ -16,7 +14,7 @@ def update_policy(pi_s:np.ndarray,max_q_action:int,eps):
     pi_s[:]=eps/nA
     pi_s[max_q_action]=1-(pi_s[0]*nA-1)
     
-def categorical_sample(prob_n, np_random: np.random.Generator=default_rand_generator):
+def categorical_sample(prob_n, np_random: np.random.Generator):
     """Sample from categorical distribution where each row specifies class probabilities."""
     prob_n = np.asarray(prob_n)
     prob_n/=prob_n.sum()  #0~1
@@ -28,7 +26,7 @@ def categorical_sample(prob_n, np_random: np.random.Generator=default_rand_gener
     #print(idx,cond)
     return idx
 
-def greedy_select(logics, np_random: np.random.Generator=default_rand_generator):
+def greedy_select(logics, np_random: np.random.Generator):
     """Sample from categorical distribution where each row specifies class probabilities."""
     if len(logics)<1 :
         return 0
