@@ -8,7 +8,7 @@ from .processors import *
 
 
 class World:
-    def __init__(self, render_mode, desc: np.ndarray, isDemo=False):
+    def __init__(self, render_mode, desc: np.ndarray,autoPolicy=True, isManualControl=False):
         esper.set_handler('cmd_move_agent', self.move_agent)
         # self.info=None
 
@@ -45,8 +45,10 @@ class World:
         rd = RenderSystem(render_mode)
         esper.add_processor(rd)
         esper.add_processor(RewardSystem())
-        if rd._pygame is not None and isDemo:
+        if rd._pygame is not None and isManualControl:
             esper.add_processor(ManualControl(rd._pygame))
+        if autoPolicy:
+            esper.add_processor(PolicySystem(self.P))
 
     def move_agent(self, action: Action):
         self.move(action)
@@ -78,6 +80,7 @@ class World:
         esper.remove_component(CACHE[r1, c1], Agent)
         a.move(action, t2, r)
         esper.add_component(CACHE[r2, c2], a)
+        self.update()
         # esper.dispatch_event('agent_moved',CACHE[s],action,CACHE[self.state2idx(s2)],r)
         return s, r, terminated
 

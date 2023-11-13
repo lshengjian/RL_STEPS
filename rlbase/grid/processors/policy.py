@@ -1,25 +1,25 @@
-from ..data import G, NUM_ACTIONS, Tile
+from ..data import G, NUM_ACTIONS, StatInfo,Tile
 import numpy as np
 import esper
 import copy
 
 
 class PolicySystem(esper.Processor):
-    def __init__(self, P: np.ndarray, gamma: float = 0.9):
+    def __init__(self, P: np.ndarray):
         super().__init__()
         row, col = G.GRID_SIZE
         total = row*col
         self.nS = total
         self.nA = NUM_ACTIONS
-        self.gamma = gamma
+        self.gamma = G.GAMMA
         self.P = P
-        self.minx = 0
-        self.maxx = col-1
-        self.miny = 0
-        self.maxy = row-1
+        # self.minx = 0
+        # self.maxx = col-1
+        # self.miny = 0
+        # self.maxy = row-1
         self.pi = np.ones((total, NUM_ACTIONS), dtype=float)/NUM_ACTIONS
         self.V = np.zeros(total, dtype=float)
-        self.Q = np.zeros((total, NUM_ACTIONS), dtype=float)
+        # self.Q = np.zeros((total, NUM_ACTIONS), dtype=float)
 
     def q_from_v(self, s: int):
         gamma = self.gamma
@@ -56,11 +56,10 @@ class PolicySystem(esper.Processor):
             policy[s] = np.sum([np.eye(self.nA)[i]
                                for i in best_a], axis=0)/len(best_a)
 
-        return policy
 
     def truncated_policy_iteration(self, max_it=5, eps=1e-8):
         while True:
-            policy = self.policy_improvement()
+            self.policy_improvement()
             old_V = copy.copy(self.V)
             self.truncated_policy_evaluation(max_it)
             if max(abs(self.V-old_V)) < eps:
@@ -72,6 +71,10 @@ class PolicySystem(esper.Processor):
     def process(self):
         self.make_policy( 10, 1e-8)
         # This will iterate over every Entity that has Tile  component:
-        for _, tile in esper.get_component(Tile):
+        for _,(tile, info) in esper.get_components(Tile,StatInfo):
             state = tile.state
-            # self.V[state]= np.sum(self.PI[state]*self.Q[state])
+            #self.V[state]= np.sum(self.pi[state]*self.Q[state])
+            info.V=self.V[state]
+            qs=self.q_from_v(state)
+            info.Qs[:]=qs[:]
+

@@ -45,33 +45,17 @@ class MiniGrid(Env):
         self,
         render_mode: Optional[str] = None,
         map_name="4x4",
-        fps=4,
-        is_terminate_reach_goal=False
+        is_terminate_reach_goal=True,
+        isAutoPolicy=True,
+        isDemo=False,
     ):
         self.is_terminate_reach_goal=is_terminate_reach_goal
-        #print(self.is_terminate_reach_goal)
         self.desc = desc = np.asarray(MAPS[map_name], dtype="c")
-        self.world=World(render_mode,desc)
-        self.metadata['render_fps']=fps
-        #self.renderer=Renderer(self.world,fps)
-        # self.nA=nA=self.world.nA
-        # self.nS=nS=self.world.nS
-        # self.H=np.zeros((nS,nA)) #visited history
-        # self.PI=np.ones((nS,nA),dtype=float)/nA #policy
-        # self.V=np.zeros(nS)  #state value
+        self.world=World(render_mode,desc,isAutoPolicy,isDemo)
+        self.metadata['render_fps']=G.FPS
         self.observation_space = spaces.Discrete(self.world.nS)
         self.action_space = spaces.Discrete(self.world.nA)
-        #self.render_mode = render_mode
 
-    # def get_policy(self, state: int,action:int,):
-    #     return self.PI[state,action]
-    # def set_policy(self, state: int,action:int,val:float):
-    #     self.PI[state,action]=val
-
-    # def get_value(self, state: int):
-    #     return self.V[state]
-    # def set_value(self, state: int,val:float):
-    #     self.V[state]=val
 
     def action_mask(self, state: int):
         mask = np.ones(self.world.nA, dtype=np.int8)
@@ -90,9 +74,7 @@ class MiniGrid(Env):
     
     def step(self, a):
         s=self.world.state
-        #self.H[s,a]+=1
-        
-        s, r, terminated=self.world.move(a,self.np_random)
+        s, r, terminated=self.world.move(a)
         terminated = terminated if  self.is_terminate_reach_goal else False
         return (int(s), r, terminated, False, {"prob": 1,"action_mask": self.action_mask(s)})
 
@@ -105,20 +87,11 @@ class MiniGrid(Env):
         super().reset(seed=seed)
         self.world.reset(self.np_random)
         s=self.world.state
-        
-        #self.H*=0
-        #self.lastaction = None
         if self.render_mode == "human":
-            self.render()
+            self.world.update()
         return int(s), {"prob": 1,"action_mask": self.action_mask(s)}
 
     def render(self):
-        if self.render_mode is None:
-            gym.logger.warn(
-                "You are calling render method without specifying any render mode. "
-            )
-            return
-        
-        return self.renderer.render(self.render_mode,self.H,self.V)
+        pass
 
  

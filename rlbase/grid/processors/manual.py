@@ -44,7 +44,7 @@ class ManualControl(esper.Processor):
         if key not in action_map.keys():
             return
         esper.dispatch_event('cmd_move_agent', action_map[key])
-        print(key)
+        #print(key)
 
         # dir =DIR_TO_VEC[action_map[key]]
         # r += dir[1]

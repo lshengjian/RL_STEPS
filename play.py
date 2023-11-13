@@ -1,14 +1,16 @@
-import numpy as np
-from gymnasium.utils import seeding
-from rlbase.grid.data import MAPS
-from rlbase import World
+import gymnasium as gym
+from rlbase import MiniGrid
 def main():
-    desc = np.asarray(MAPS['2x2'], dtype="c")
-    world=World('human',desc,True)
-    rand_generator=seeding.np_random(1234)[0]
-    world.reset(rand_generator)
+    env=MiniGrid('human','2x2',False,False,False)
+    #env = gym.make("LunarLander-v2", render_mode="human")
+    observation, info = env.reset(seed=42)
     for _ in range(1000):
-        world.update()
+        action = env.action_space.sample()  # this is where you would insert your policy
+        observation, reward, terminated, truncated, info = env.step(action)
+
+
+
+    env.close()
 
 if __name__ == "__main__":
     main()
