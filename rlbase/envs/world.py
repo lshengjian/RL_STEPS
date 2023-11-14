@@ -3,13 +3,13 @@ import numpy as np
 import esper
 from ..utils.sample import categorical_sample
 from .data import *
-from .processors import *
+from .processors import RenderSystem
 
 
 class World:
-    cache={}
-    def __init__(self, render_mode, desc: np.ndarray):#,autoPolicy=True, isManualControl=False
-        esper.set_handler('cmd_move_agent', self.move_agent)
+
+    def __init__(self, render_mode, desc: np.ndarray,show_stat_info=False):#,autoPolicy=True, isManualControl=False
+        
         self.desc = desc
         self.nrow, self.ncol = nrow, ncol = desc.shape
         self.nA = nA = NUM_ACTIONS
@@ -25,7 +25,7 @@ class World:
         for row in range(nrow):
             for col in range(ncol):
                 ent = esper.create_entity()
-                World.cache[(row, col)] = ent
+                CACHE[(row, col)] = ent
                 flag = desc[row][col].decode()
                 tile = Tile(row, col, flag)
                 esper.add_component(ent, tile)
@@ -37,28 +37,27 @@ class World:
                     li = self.P[s][a]
                     li.append((1.0, *self._try_move(row, col, a)))
 
-        # esper.add_processor(PolicySystem(self.P), priority=2)
-        self.rederer = RenderSystem(render_mode)
-        esper.add_processor(self.rederer)
-        # esper.add_processor(RewardSystem())
-        # if rd._pygame is not None and isManualControl:
-        #     esper.add_processor(ManualControl(rd._pygame))
-        # if autoPolicy:
-        #     esper.add_processor(PolicySystem(self.P))
 
-    def move_agent(self, action: Action):
-        self.move(action)
+        self.rederer = RenderSystem(render_mode,show_stat_info)
+        esper.add_processor(self.rederer)
+
+
 
     def update(self):
         esper.process()
 
     def reset(self, np_random):
         self.np_random = np_random
+        data=esper.get_component(Agent)
+        if len(data)>0:
+            e,_=data[0]
+            esper.remove_component(e,Agent)
         self.state = categorical_sample(self.initial_state_distrib, np_random)
         r, c = self.state2idx(self.state)
-        ent = World.cache[(r, c)]
+        ent = CACHE[(r, c)]
         t = esper.component_for_entity(ent, Tile)
-        esper.add_component(ent, Agent(t))
+        esper.add_component(ent,Agent(t))
+        #todo reset processors
         self.update()
 
     def move(self, action: Action):
@@ -71,28 +70,18 @@ class World:
         s2 = s
         r1, c1 = self.state2idx(s1)
         r2, c2 = self.state2idx(s2)
-        # t1=esper.component_for_entity(World.cache[r1,c1],Tile)
-        t2 = esper.component_for_entity(World.cache[r2, c2], Tile)
-        agent = esper.component_for_entity(World.cache[r1, c1], Agent)
-        esper.remove_component(World.cache[r1, c1], Agent)
+        # t1=esper.component_for_entity(CACHE[r1,c1],Tile)
+        t2 = esper.component_for_entity(CACHE[r2, c2], Tile)
+         
+        agent = esper.component_for_entity(CACHE[r1, c1], Agent)
+        esper.remove_component(CACHE[r1, c1], Agent)
         agent.move(action, t2, r)
-        esper.add_component(World.cache[r2, c2], agent)
+        esper.add_component(CACHE[r2, c2], agent)
         self.update()
-        # esper.dispatch_event('agent_moved',World.cache[s],action,World.cache[self.state2idx(s2)],r)
+        # esper.dispatch_event('agent_moved',CACHE[s],action,CACHE[self.state2idx(s2)],r)
         return s, r, terminated
 
-    # def get_vec(self):
-    #     r,c=self.state2idx(self.state)
-    #     r+=1
-    #     c+=1
-    #     x,y=c,r
-    #     return 1,x,y,x**2,y**2,x*y
-    # def get_vec_state(self,state):
-    #     r,c=self.state2idx(state)
-    #     r+=1
-    #     c+=1
-    #     x,y=c/self.ncol,r/self.nrow
-    #     return 1,x,y,x**2,y**2,x*y
+
 
     def idx2state(self, row, col):
         return row*self.ncol+col

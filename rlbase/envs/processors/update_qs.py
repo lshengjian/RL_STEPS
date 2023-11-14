@@ -1,21 +1,21 @@
-from ..data import G, NUM_ACTIONS, Tile,Agent,StatInfo,CACHE
+from ..data import G, Agent,StatInfo
 import numpy as np
 import esper
 import copy
+from ..data import CACHE
 
-
-class RewardSystem(esper.Processor):
+class UpdateQs(esper.Processor):
     def __init__(self):
         super().__init__()
-        self.index=0
+        #self.index=0
 
     def process(self):
         for _, agent in esper.get_component(Agent):
             data = agent.visited
-            if len(data)<=self.index:
+            if len(data)<1:
                 return
 
-            t1,a,t2,r=agent.visited[self.index]
+            t1,a,t2,r,*_=agent.visited[-1]
             e1=CACHE[t1.row,t1.col]
             e2=CACHE[t2.row,t2.col]
             info1=esper.component_for_entity(e1,StatInfo)
@@ -23,5 +23,5 @@ class RewardSystem(esper.Processor):
             info1.Qs[a]=r+G.GAMMA*info2.V
             if info1.V<info1.Qs[a]:
                 info1.V=info1.Qs[a] #todo
-            self.index+=1
+
 

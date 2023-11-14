@@ -26,14 +26,15 @@ class MiniGrid(Env):
         self,
         render_mode: Optional[str] = None,
         map_name="4x4",
-        is_terminate_reach_goal=True,
+        show_stat_info=True
+        #is_terminate_reach_goal=True,
         # isAutoPolicy=True,
         # isDemo=False,
     ):
         assert render_mode is None or render_mode in self.metadata["render_modes"]
-        self.is_terminate_reach_goal=is_terminate_reach_goal
+        #self.is_terminate_reach_goal=is_terminate_reach_goal
         self.desc = desc = np.asarray(MAPS[map_name], dtype="c")
-        self.world=World(render_mode,desc)
+        self.world=World(render_mode,desc,show_stat_info)
         self.metadata['render_fps']=G.FPS
         self.observation_space = spaces.Discrete(self.world.nS)
         self.action_space = spaces.Discrete(self.world.nA)
@@ -61,7 +62,7 @@ class MiniGrid(Env):
     def step(self, a):
         s=self.world.state
         s, r, terminated=self.world.move(a)
-        terminated = terminated if  self.is_terminate_reach_goal else False
+        #terminated = terminated if  self.is_terminate_reach_goal else False
         return (s, r, terminated, False, {"prob": 1,"action_mask": self.action_mask(s)})
 
     def reset(  self, seed=None, options=None):
@@ -69,7 +70,7 @@ class MiniGrid(Env):
         self.world.reset(self.np_random)
         s=self.world.state
         self.world.update()
-        return int(s), {"prob": 1,"action_mask": self.action_mask(s)}
+        return s, {"prob": 1,"action_mask": self.action_mask(s)}
 
 
 

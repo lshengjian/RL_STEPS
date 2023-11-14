@@ -6,8 +6,9 @@ import esper
 
 
 class RenderSystem(esper.Processor):
-    def __init__(self, render_mode):
+    def __init__(self, render_mode,show_stat_info=False):
         self.render_mode = render_mode
+        self.show_stat_info=show_stat_info
 
         self.fps = G.FPS
         self._surface = None
@@ -21,8 +22,8 @@ class RenderSystem(esper.Processor):
         self.render()
         self.offsets={}
 
-    def draw_text(self,x,y,msg,isBig=False,color=(255,255,0)):
-        textSerface =self._font2.render(msg, True,color ) if isBig else self._font.render(msg, True,color )
+    def draw_text(self,x,y,msg,isBig=False):
+        textSerface =self._font2.render(msg, True,TEXT_COLOR ) if isBig else self._font.render(msg, True,TEXT_COLOR )
         self._surface.blit(textSerface, (x, y))
 
     def process(self):
@@ -34,9 +35,14 @@ class RenderSystem(esper.Processor):
         r = min(w, h)
         self._surface.fill((255,255,255))
         self.draw_tiles(w, h)
-        self.draw_history(r)
-        self.draw_info(r)
- 
+        if self.show_stat_info:
+            self.draw_history(r)
+            self.draw_info(r)
+        else:
+            for e, (tile,agent) in esper.get_components(Tile,Agent):
+                x, y = tile.position
+                self._gfxdraw.filled_circle(self._surface, x, y, r//4, AGENT_COLOR)
+    
 
         self._pygame.display.flip()
         if self.render_mode == "human":
@@ -52,14 +58,14 @@ class RenderSystem(esper.Processor):
             start=0
             if esper.has_component(e,Agent):
                 x, y = tile.position
-                self._gfxdraw.filled_circle(self._surface, x, y, r//9, (0, 0, 0))
-                self.draw_text(x-10*k,y-5*k,f"{info.V:.1f}",True,(255,255,255))
+                self._gfxdraw.filled_circle(self._surface, x, y, r//4, AGENT_COLOR)
+                self.draw_text(x-10*k,y-5*k,f"{info.V:.1f}",True)
                 #self.draw_text(x-12,y+16,f"{info.Qs[0]:.1f}",False,(255,255,255))
                 start=1
 
             for i in range(start,NUM_ACTIONS):
                 x, y = tile.side(i)
-                self.draw_text(x-10*k,y+5*k,f"{info.Qs[i]:.1f}",False,(255,0,0))
+                self.draw_text(x-10*k,y+5*k,f"{info.Qs[i]:.1f}",False)
 
     def draw_history(self, r):
         agent:Agent=esper.get_component(Agent)[0][1]
@@ -67,9 +73,9 @@ class RenderSystem(esper.Processor):
             x1, y1 = t1.position
             x2, y2 = t2.position
             if t1==t2:
-                self._gfxdraw.circle(self._surface, x1, y1, r//8, (0, 0, 220,30))
+                self._gfxdraw.circle(self._surface, x1, y1, r//3, (*HISTORY_COLOR,30))
             else:
-                self._gfxdraw.line(self._surface, x1+dx, y1+dy, x2,y2, (0, 0, 220,30))
+                self._gfxdraw.line(self._surface, x1+dx, y1+dy, x2,y2, (*HISTORY_COLOR,30))
 
     def draw_tiles(self, tile_w, tile_h):
         for e, (tile,info) in esper.get_components(Tile,StatInfo):
@@ -110,8 +116,8 @@ class RenderSystem(esper.Processor):
                 w, h = G.TILE_SIZE
                 r = min(w, h)
                 #print(r)
-                self._font = pygame.font.Font(None, 12*r//96)
-                self._font2 = pygame.font.Font(None, 14*r//96)
+                self._font = pygame.font.Font(None, 12*r//86)
+                self._font2 = pygame.font.Font(None, 14*r//86)
                 self._surface = pygame.display.set_mode(self.window_size)
             elif mode == "rgb_array":
                 self._surface = pygame.Surface(self.window_size)
