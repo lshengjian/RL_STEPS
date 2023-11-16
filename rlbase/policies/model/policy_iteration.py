@@ -10,7 +10,7 @@ class IterationPolicy(RandomPolicy):
     def __init__(self, env: MiniGrid):
         super().__init__(env)
         self.action = Action.STAY
-        esper.add_processor(PolicyIterationSystem(env.world.P))
+        esper.add_processor(PolicyIterationSystem(env.game.P))
 
     def decition(self, state):
         ent = CACHE[self.env.world.state2idx(state)]

@@ -1,23 +1,31 @@
-from ..data import  Action
-import esper
+from ..data import  Action,Transition
+from .plugin import Plugin
+from ..event_center import  EventCenter
+from ..state import State
+from .renderer import Renderer
 
-
-class ManualControl(esper.Processor):
+class ManualControl(Plugin):
     def __init__(
         self,
-        pygame
-    ) -> None:
-        self._pygame = pygame
-        self._cache = None
+        state: State,
+        delay: int,
+        renderer: Renderer,
+        hub:EventCenter):
+        super().__init__(state, delay)
+        self.hub=hub
+        self._pygame = renderer._pygame
+        
 
 
-    def process(self):
-        pygame = self._pygame
-        if pygame is None:
+
+    def update(self, t: Transition):
+        pygame=self._pygame
+
+        if  pygame is None:
             return
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                esper.dispatch_event("APP_QUIT")
+                self.hub.dispatch_event("APP_QUIT")
                 
                 return
             elif event.type == pygame.KEYDOWN:
@@ -27,7 +35,7 @@ class ManualControl(esper.Processor):
     def key_handler(self, key):
         # print(key)
         if key == "escape":
-            esper.dispatch_event("APP_QUIT")
+            self.hub.dispatch_event("APP_QUIT")
             return
 
         action_map = {
@@ -41,5 +49,5 @@ class ManualControl(esper.Processor):
 
         if key not in action_map.keys():
             return
-        esper.dispatch_event('cmd_move_agent', action_map[key])
+        self.hub.dispatch_event('cmd_move_agent', action_map[key])
 

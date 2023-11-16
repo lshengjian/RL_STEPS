@@ -2,10 +2,10 @@
 from rlbase import MiniGrid
 from rlbase.policies.random import RandomPolicy
 def main():
-    env=MiniGrid('human','4x4',False)
+    env=MiniGrid('human','4x4')
     state,_=env.reset(seed=42)
     policy=RandomPolicy(env)
-    for _ in range(100):
+    for _ in range(1000):
         action=policy.decition(state)
         state,*_=env.step(action)
 

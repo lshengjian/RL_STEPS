@@ -1,20 +1,47 @@
-import esper
-from rlbase import Action
+
+from rlbase.envs.data import Action
 from gymnasium import Env
-from rlbase.envs.processors import ManualControl,UpdateQs
+from rlbase.envs.event_center import EventCenter
 from .random import RandomPolicy
 class ManualPolicy(RandomPolicy):
-    def __init__(self,env:Env):
+    def __init__(self,env:Env,hub:EventCenter):
         super().__init__(env)
         self.action=Action.STAY
-        esper.set_handler('cmd_move_agent', self.move_agent)
-        esper.add_processor(ManualControl(env.world.rederer._pygame))
-        esper.add_processor(UpdateQs())
+        self.hub=hub
 
-    def move_agent(self,action:Action):
-        self.action=action
+
 
     def decition(self,state):
+        pygame=self.env.renderer._pygame
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.hub.dispatch_event("APP_QUIT")
+                
+                return
+            elif event.type == pygame.KEYDOWN:
+                key = pygame.key.name(event.key)
+                self.key_handler(key)
         rt=self.action
         self.action=Action.STAY
         return rt 
+    def key_handler(self, key):
+        # print(key)
+        if key == "escape":
+            self.hub.dispatch_event("APP_QUIT")
+            return
+
+        action_map = {
+            "space": Action.STAY,
+            "left": Action.LEFT,
+            "right": Action.RIGHT,
+            "up": Action.UP,
+            "down": Action.DOWN,
+        }
+
+
+        if key not in action_map.keys():
+            return
+        self.action=action_map[key]
+        #self.hub.dispatch_event('cmd_move_agent', action_map[key])
+

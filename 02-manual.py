@@ -1,6 +1,6 @@
 from rlbase import MiniGrid
 from rlbase.policies.manual import ManualPolicy
-import esper
+from rlbase.envs.event_center import EventCenter
 
 is_running=True
 def on_quit():
@@ -8,12 +8,14 @@ def on_quit():
     is_running=False
 
 def main():
-    env=MiniGrid('human','4x4',True)
-    policy=ManualPolicy(env)
-    esper.set_handler('APP_QUIT',on_quit)
+    hub=EventCenter()
+    env=MiniGrid('human','4x4')
+    policy=ManualPolicy(env,hub)
+    hub.set_handler('APP_QUIT',on_quit)
 
     
     s,_=env.reset(seed=42)
+    
     while is_running:
         action=policy.decition(s)
         s,*_=env.step(action)
