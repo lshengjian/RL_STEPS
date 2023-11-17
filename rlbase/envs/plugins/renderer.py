@@ -1,46 +1,47 @@
 import numpy as np
 from gymnasium.error import DependencyNotInstalled
-from ..data import *
+from typing import List, Tuple
 from .plugin import Plugin
-# from ..event_center import  EventCenter
-from ..state import State
+from ..core import Model, Action, DIR_VECTOR,TEXT_COLOR,Transition
 
 
 class Renderer(Plugin):
     def __init__(self,
-                 state: State,
+                 model: Model,
                  delay: int = 100,
-                 render_mode: str = None):
-        super().__init__(state, delay)
+                 render_mode: str = None,
+                 fps=4,
+                 win_size=(1024, 768)):
+        super().__init__(model, delay)
         self.render_mode = render_mode
 
-        self.fps = G.FPS
+        self.fps = fps
         self._surface = None
         self._clock = None
-        self.window_size = G.WIN_SIZE
-        w, h = G.WIN_SIZE
-        row, col = state.nrow, state.ncol
+        self.window_size = win_size
+        w, h = win_size
+        row, col = model.nrow, model.ncol
         self.tile_size = (w//col, h//row)
         self.render()
 
     @property
     def agent_position(self) -> Tuple[int, int]:
         w, h = self.tile_size
-        r, c = self.state.state2idx(self.state.current)
+        r, c = self.model.state2idx(self.model.state)
         return (c*w+w//2, r*h+h//2)
 
-    def side(self, state: int, a: Action) -> Tuple[int, int]:
+    def side(self, Model: int, a: Action) -> Tuple[int, int]:
         w, h = self.tile_size
-        r, c = self.state.state2idx(state)
+        r, c = self.model.state2idx(Model)
         x, y = c*w+w//2, r*h+h//2
-        dx, dy = DIR_TO_VEC[a]
+        dx, dy = DIR_VECTOR[a]
         dx = int(w/3*dx)
         dy = int(h/3*dy)
         return (x+dx, y+dy)
-    
+
     def line(self, x1, y1, x2, y2, color):
-        self._gfxdraw.line(self._surface,x1, y1, x2, y2, color)
-        
+        self._gfxdraw.line(self._surface, x1, y1, x2, y2, color)
+
     def circle(self, x, y, r, color):
         self._gfxdraw.circle(self._surface, x, y, r, color)
 
@@ -60,6 +61,7 @@ class Renderer(Plugin):
         r = min(w, h)
         self._surface.fill((255, 255, 255))
         self.draw_tiles(w, h)
+
     def flip_wait(self):
         self._pygame.display.flip()
         if self.render_mode == "human":
@@ -69,12 +71,12 @@ class Renderer(Plugin):
                 self._clock.tick(self.fps)
 
     def draw_tiles(self, tile_w, tile_h):
-        for i in range(self.state.nS):
+        for i in range(self.model.nS):
             x, y = self.side(i, Action.STAY)
-            color = self.state.get_color(i)
+            color = self.model.get_color(i)
             self._gfxdraw.box(
                 self._surface, [x-tile_w//2, y-tile_h//2, tile_w, tile_h], color)
-        r, c = self.state.nrow, self.state.ncol
+        r, c = self.model.nrow, self.model.ncol
         for i in range(1, r):
             self._gfxdraw.hline(self._surface, 0, tile_w *
                                 c, i*tile_h, (0, 0, 0))

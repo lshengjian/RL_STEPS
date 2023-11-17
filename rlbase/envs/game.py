@@ -1,12 +1,10 @@
-from .data import *
-from .state import State
-#from .event_center import EventCenter
+from .core import Model,Transition,Action
 from .plugins.plugin import Plugin
 
 
 class Game:
-    def __init__(self, state: State):  # ,center:EventCenter
-        self.state = state
+    def __init__(self, model: Model):  # ,center:EventCenter
+        self.model = model
         self.plugins = []
 
     def add_plugin(self, plugin: Plugin):
@@ -17,13 +15,13 @@ class Game:
         for p in self.plugins:
             p.update(t)
 
-    # def reset(self):
-    #     self.state.reset()
-    #     for p in self.plugins:
-    #         p.reset()
+    def reset(self):
+        self.model.reset()
+        for p in self.plugins:
+            p.reset()
 
     def step(self, action: Action):
-        s1=self.state.current
-        s2, reward, terminated = self.state.step(action)
+        s1=self.model.state
+        s2, reward, terminated = self.model.step(action)
         self.update(Transition(s1,action,s2,reward, terminated))
         return s2, reward, terminated

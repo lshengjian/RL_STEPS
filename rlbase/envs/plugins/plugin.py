@@ -1,17 +1,15 @@
-#from ..event_center import  EventCenter
-from ..state import  State
-from ..data import Transition
+from ..core import Model, Transition
+
 class Plugin:
     def __init__(
         self,
-        state:State,
-        delay:int=0
-        #center:EventCenter
+        model: Model,
+        delay: int = 0
     ) -> None:
-        self.state=state
-        self.delay=delay
+        self.model = model
+        self.delay = delay
 
-    def update(self,t:Transition):
+    def update(self, t: Transition):
         pass
-    # def reset(self ):
-    #     pass
+    def reset(self ):
+        pass

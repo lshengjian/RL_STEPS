@@ -1,24 +1,21 @@
 import numpy as np
-from ..utils.sample import categorical_sample
-from typing import Dict,Tuple
-from .data import Action,OUT_BOUND,IN_GOAL,IN_FORBIDDEN,COLORS,NUM_ACTIONS
+from .utils import categorical_sample
 
-class State:
+from .define import TState
+from .constants import Action,OUT_BOUND,IN_GOAL,IN_FORBIDDEN,COLORS,NUM_ACTIONS
+
+class Model:
 
     def __init__(self,
-                 desc: np.ndarray,
-                 np_random:np.random.Generator): # colors:Dict[str,Tuple[int,int,int]]
-        self.np_random = np_random
-        #self.colors=colors
+                 desc: np.ndarray): # colors:Dict[str,Tuple[int,int,int]]
+
         self.desc = desc
         self.nrow, self.ncol = nrow, ncol = desc.shape
         self.nA = nA = NUM_ACTIONS
         self.nS = nS = nrow * ncol
-        self.current = 0
+        self.state:TState = 0
 
         self.ext_data={}#插件产生的扩展数据
-        # self.ext_V = np.zeros(nS)
-        # self.ext_Qs = np.zeros((nS,nA))
 
         self.initial_state_distrib = np.array(
             desc == b'S').astype("float32").ravel()
@@ -32,7 +29,11 @@ class State:
                     li = self.P[s][a]
                     li.append((1.0, *self.move(row, col, a)))
     
-    def action_mask(self, state: int):
+    def set_random_generator(self,np_random:np.random.Generator):
+        self.np_random = np_random
+       
+            
+    def action_mask(self, state: TState):
         mask = np.ones(self.nA, dtype=np.int8)
         nrow = self.nrow
         ncol = self.ncol
@@ -48,26 +49,25 @@ class State:
         return mask
 
     def reset(self ):
-        self.current = categorical_sample(self.initial_state_distrib, self.np_random)
+        self.state = categorical_sample(self.initial_state_distrib, self.np_random)
 
-    def get_color(self,s:int):
+    def get_color(self,s:TState):
         r,c=self.state2idx(s)
         flag = self.desc[r][c].decode()
         return COLORS[flag]
       
 
 
-    def idx2state(self, row, col):
+    def idx2state(self, row:int, col:int)->TState:
         return row*self.ncol+col
 
-    def state2idx(self, state):
+    def state2idx(self, state:TState):
         return state//self.ncol, state % self.ncol
 
     def step(self, action: Action):
-        r,c=self.state2idx(self.current)
+        r,c=self.state2idx(self.state)
         newstate, reward, terminated=self.move(r,c,action)
-        #self.ext_visited.append((self.current,action,newstate,reward,terminated))
-        self.current=newstate
+        self.state=newstate
         return newstate, reward, terminated
 
     def move(self, row: int, col: int, action: Action):

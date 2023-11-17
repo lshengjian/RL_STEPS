@@ -1,0 +1,7 @@
+algorithm:
+  gamma: 0.9
+render:
+  fps: 0
+  win_size: [800,600]
+
+

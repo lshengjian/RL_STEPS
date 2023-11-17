@@ -1,16 +1,14 @@
-from ..data import AGENT_COLOR, Transition
 from .plugin import Plugin
-# from ..event_center import  EventCenter
-from ..state import State
+from ..core import Model, AGENT_COLOR,Transition
 from .renderer import Renderer
 
 
 class AgentRenderer(Plugin):
     def __init__(self,
-                 state: State,
+                 model: Model,
                  delay: int,
                  renderer: Renderer):
-        super().__init__(state, delay)
+        super().__init__(model, delay)
         self.renderer = renderer
 
     def update(self, t: Transition):

@@ -1,23 +1,25 @@
 
-from rlbase.envs.data import Action
+from rlbase.envs.core import Action
 from gymnasium import Env
-from rlbase.envs.event_center import EventCenter
+from rlbase.envs.core import TState
+#from rlbase.envs.event_center import EventCenter
 from .random import RandomPolicy
 class ManualPolicy(RandomPolicy):
-    def __init__(self,env:Env,hub:EventCenter):
+    def __init__(self,env:Env):
         super().__init__(env)
         self.action=Action.STAY
-        self.hub=hub
+        self.running=True
+        #self.hub=hub
 
 
 
-    def decition(self,state):
+    def decition(self,state:TState):
         pygame=self.env.renderer._pygame
         
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                self.hub.dispatch_event("APP_QUIT")
-                
+                #self.hub.dispatch_event("APP_QUIT")
+                self.running=False
                 return
             elif event.type == pygame.KEYDOWN:
                 key = pygame.key.name(event.key)
@@ -28,7 +30,8 @@ class ManualPolicy(RandomPolicy):
     def key_handler(self, key):
         # print(key)
         if key == "escape":
-            self.hub.dispatch_event("APP_QUIT")
+            self.running=False
+            #self.hub.dispatch_event("APP_QUIT")
             return
 
         action_map = {
@@ -43,5 +46,5 @@ class ManualPolicy(RandomPolicy):
         if key not in action_map.keys():
             return
         self.action=action_map[key]
-        #self.hub.dispatch_event('cmd_move_agent', action_map[key])
+
 

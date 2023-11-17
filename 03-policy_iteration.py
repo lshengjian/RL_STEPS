@@ -1,16 +1,15 @@
-from rlbase import MiniGrid
-from rlbase.policies.model.policy_iteration import IterationPolicy
-def main():
-    env=MiniGrid('human','4x4',True)
-    policy=IterationPolicy(env)
-    state,_=env.reset(seed=42)
-    
-    for _ in range(400):
-        action=policy.decition(state)
-        state, r, terminated,*_=env.step(action)
-        if terminated:
-            state,_=env.reset()
+from rlbase import PolicyGrid
+from rlbase.policies.manual import ManualPolicy
 
+def main():
+    env=PolicyGrid('human','4x4')
+    policy=ManualPolicy(env)
+   
+    s,_=env.reset(seed=42)
+    
+    while policy.running:
+        action=policy.decition(s)
+        s,*_=env.step(action)
 
     env.close()
 
