@@ -14,7 +14,7 @@ class PolicyGrid(MiniGrid):
     def init_game(self):
         self.model = Model(self.desc)
         self.game = Game(self.model)
-        self.renderer = Renderer(self.model, 100,self.render_mode)
+        self.renderer = Renderer(self.model, 100,self.render_mode,self.metadata['render_fps'] )
         self.game.add_plugin(self.renderer)
         self.game.add_plugin(PolicyRenderer(self.model,101,self.renderer))
         self.game.add_plugin(AgentRenderer(self.model,102,self.renderer))

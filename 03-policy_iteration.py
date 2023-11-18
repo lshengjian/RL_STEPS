@@ -1,13 +1,13 @@
 from rlbase import PolicyGrid
-from rlbase.policies.manual import ManualPolicy
+from rlbase.policies.manual import RandomPolicy
 
 def main():
     env=PolicyGrid('human','4x4')
-    policy=ManualPolicy(env)
+    policy=RandomPolicy(env)
    
     s,_=env.reset(seed=42)
     
-    while policy.running:
+    for _ in range(1000):
         action=policy.decition(s)
         s,*_=env.step(action)
 

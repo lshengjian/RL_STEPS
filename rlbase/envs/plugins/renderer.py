@@ -30,9 +30,9 @@ class Renderer(Plugin):
         r, c = self.model.state2idx(self.model.state)
         return (c*w+w//2, r*h+h//2)
 
-    def side(self, Model: int, a: Action) -> Tuple[int, int]:
+    def side(self, s: int, a: Action) -> Tuple[int, int]:
         w, h = self.tile_size
-        r, c = self.model.state2idx(Model)
+        r, c = self.model.state2idx(s)
         x, y = c*w+w//2, r*h+h//2
         dx, dy = DIR_VECTOR[a]
         dx = int(w/3*dx)
@@ -47,6 +47,9 @@ class Renderer(Plugin):
 
     def filled_circle(self, x, y, r, color):
         self._gfxdraw.filled_circle(self._surface, x, y, r, color)
+    
+    def filled_polygon(self,data, color):
+        self._gfxdraw.filled_polygon(self._surface,data,color)
 
     def draw_text(self, x, y, msg, isBig=False):
         textSerface = self._font2.render(

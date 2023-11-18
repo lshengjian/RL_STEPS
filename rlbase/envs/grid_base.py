@@ -30,7 +30,7 @@ class MiniGrid(Env):
         self,
         render_mode: str = None,
         map_name="4x4",
-        fps=4,
+        fps=24,
         win_size=(1024,768)
     ):
 
@@ -45,7 +45,7 @@ class MiniGrid(Env):
     def init_game(self):
         self.model = Model(self.desc)
         self.game = Game(self.model)
-        self.renderer = Renderer(self.model, 100,self.render_mode)
+        self.renderer = Renderer(self.model, 100,self.render_mode,self.metadata['render_fps'] )
         self.game.add_plugin(self.renderer)
         self.game.add_plugin(AgentRenderer(self.model,101,self.renderer))
         self.game.add_plugin(VisitedRenderer(self.model,102,self.renderer))
