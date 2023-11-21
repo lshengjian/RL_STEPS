@@ -1,5 +1,5 @@
 from gymnasium import Env
-from rlbase.envs.core import TState
+from rlbase.core import TState
 class RandomPolicy:
     def __init__(self,env:Env):
         self.env:Env=env

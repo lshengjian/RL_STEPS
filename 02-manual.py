@@ -1,9 +1,12 @@
 from rlbase import MiniGrid
 from rlbase.policies.manual import ManualPolicy
+from rlbase.plugins.renderer_return import ReturnRenderer
+import hydra
 
-
-def main():
-    env=MiniGrid('human','4x4')
+@hydra.main(config_path="./config", config_name="args", version_base="1.3")
+def main(cfg: "DictConfig"):  # noqa: F821
+    env=MiniGrid('human',cfg.map_4x4,cfg.render.fps,cfg.render.win_size)
+    env.game.add_plugin(ReturnRenderer(env.game.model,2,env.renderer,cfg.algorithm.gamma))
     policy=ManualPolicy(env)
    
     s,_=env.reset(seed=42)
