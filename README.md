@@ -23,7 +23,7 @@ pip install gymnasium[classic-mujoco]
 
 # Acknowledgements
 
-thank [MorvanZhou](https://github.com/MorvanZhou/Reinforcement-learning-with-tensorflow)
+thank [赵世钰老师](https://github.com/MathFoundationRL/Book-Mathmatical-Foundation-of-Reinforcement-Learning)
 
 thank [seungeunrho](https://github.com/seungeunrho/minimalRL)
 
