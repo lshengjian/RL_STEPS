@@ -4,7 +4,7 @@ from .renderer import Renderer
 
 
 class VisitedRenderer(Plugin):
-    MAX_SIZE = 1024
+    MAX_SIZE = 2048
 
     def __init__(self,
                  model: Model,

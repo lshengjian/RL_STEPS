@@ -51,8 +51,8 @@ class PolicyRenderer(Plugin):
                     self.renderer.filled_polygon(data, POLICY_COLOR)
         s = t.s1
         a = t.action
-        pi[s][a] += 0.05
-        pi[s, :] /= sum(pi[s])
+        # pi[s][a] += 0.05
+        # pi[s, :] /= sum(pi[s])
 
     def reset(self):
         self._enable=True

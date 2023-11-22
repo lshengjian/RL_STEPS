@@ -1,7 +1,7 @@
 algorithm:
   gamma: 0.9
 render:
-  fps: 24
+  fps: 60
   win_size: [1280,1024]
 
 map_1x3: ["-SG"]
