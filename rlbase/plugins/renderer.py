@@ -39,6 +39,7 @@ class Renderer(Plugin):
         return (x+dx, y+dy)
 
     def line(self, x1, y1, x2, y2, color):
+        
         self._gfxdraw.line(self._surface, x1, y1, x2, y2, color)
 
     def circle(self, x, y, r, color):
@@ -65,8 +66,9 @@ class Renderer(Plugin):
         self.draw_tiles(w, h)
 
     def flip_wait(self):
-        self._pygame.display.flip()
+        
         if self.render_mode == "human":
+            self._pygame.display.flip()
             self._pygame.event.pump()
             self._pygame.display.update()
             if self.fps > 0:

@@ -47,6 +47,8 @@ class MiniGrid(Env):
         self.game.add_plugin(self.renderer)
         self.game.add_plugin(AgentRenderer(self.model,1,self.renderer))
         self.game.add_plugin(LastRenderer(self.model,999,self.renderer))
+        self.observation_space = spaces.Discrete(self.model.nS)
+        self.action_space = spaces.Discrete(self.model.nA)
 
 
     def close(self):
@@ -66,7 +68,6 @@ class MiniGrid(Env):
         self.game.reset()
         
         
-        self.observation_space = spaces.Discrete(model.nS)
-        self.action_space = spaces.Discrete(model.nA)
+
         s = model.state
         return s, {"prob": 1, "action_mask": model.action_mask(s)}

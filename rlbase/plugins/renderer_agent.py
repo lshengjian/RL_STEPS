@@ -11,6 +11,8 @@ class AgentRenderer(Plugin):
         self.renderer = renderer
 
     def update(self, t: Transition):
+        if  self.renderer._surface is None:
+            return
         x, y = self.renderer.agent_position
         r = min(*self.renderer.tile_size)
         self.renderer.filled_circle(x, y, r//4, AGENT_COLOR)
