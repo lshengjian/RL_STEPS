@@ -31,6 +31,8 @@ class PolicyRenderer(Plugin):
         return []
 
     def update(self, t: Transition):
+        if self.renderer._surface is None:
+            return
         r = min(*self.renderer.tile_size)
         for s in range(self._model.nS):
             for a in range(self._model.nA):
