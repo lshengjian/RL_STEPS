@@ -36,6 +36,7 @@ class MiniGrid(Env):
         self.metadata['render_fps'] = fps
         self.map_desc = np.asarray(map, dtype="c")
         self.render_mode = render_mode
+        self.win_size=win_size
         self.init_game()
         
         
@@ -43,7 +44,7 @@ class MiniGrid(Env):
     def init_game(self):
         self.model = Model(self.map_desc)
         self.game = Game(self.model)
-        self.renderer = Renderer(self.model, 0,self.render_mode,self.metadata['render_fps'] )
+        self.renderer = Renderer(self.model, 0,self.render_mode,self.metadata['render_fps'],self.win_size )
         self.game.add_plugin(self.renderer)
         self.game.add_plugin(AgentRenderer(self.model,1,self.renderer))
         self.game.add_plugin(LastRenderer(self.model,999,self.renderer))

@@ -9,11 +9,11 @@ from rlbase.plugins.renderer_policy import PolicyRenderer
 @hydra.main(config_path="./config", config_name="args", version_base="1.3")
 def main(cfg: "DictConfig"):  # noqa: F821
     # 
-    env=MyGrid(None,cfg.map_5x5,cfg.render.fps,cfg.render.win_size) 
-    solver=Solver(env)
-    dqn=solver.dqn()
-    env.close()
-    torch.save(dqn.state_dict(),'dqn.pt')
+    # env=MyGrid(None,cfg.map_5x5,cfg.render.fps,cfg.render.win_size) 
+    # solver=Solver(env)
+    # dqn=solver.dqn()
+    # env.close()
+    # torch.save(dqn.state_dict(),'dqn.pt')
     env=MyGrid('human',cfg.map_5x5,cfg.render.fps,cfg.render.win_size)
     pr=PolicyRenderer(env.game.model,3,env.renderer)
     env.game.add_plugin(pr)

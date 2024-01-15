@@ -10,7 +10,7 @@ class Renderer(Plugin):
                  delay: int = 100,
                  render_mode: str = None,
                  fps=4,
-                 win_size=(1024, 768)):
+                 win_size=(800, 600)):
         super().__init__(model, delay)
         self.render_mode = render_mode
 

@@ -2,7 +2,7 @@ algorithm:
   gamma: 0.9
 render:
   fps: 2
-  win_size: [1280,1024]
+  win_size: [800,600]
 
 map_1x3: ["-SG"]
 map_2x2: ["SX", "-G"]
